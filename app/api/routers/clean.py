@@ -80,13 +80,15 @@ async def clean_subtitles(
         
         # Check each field explicitly
         has_context = hasattr(request, 'context_sources') and request.context_sources
+        has_auto_context = hasattr(request, 'context_mode') and request.context_mode and request.context_mode != 'none'
         has_retrieval = hasattr(request, 'enable_retrieval') and request.enable_retrieval
         has_llm = hasattr(request, 'enable_llm') and request.enable_llm  
         has_tenant = hasattr(request, 'tenant_id') and request.tenant_id
+        has_holistic = hasattr(request, 'enable_holistic_correction') and request.enable_holistic_correction
         
-        print(f"DEBUG: has_context={has_context}, has_retrieval={has_retrieval}, has_llm={has_llm}, has_tenant={has_tenant}")
+        print(f"DEBUG: has_context={has_context}, has_auto_context={has_auto_context}, has_retrieval={has_retrieval}, has_llm={has_llm}, has_tenant={has_tenant}, has_holistic={has_holistic}")
         
-        use_enhanced = any([has_context, has_retrieval, has_llm, has_tenant])
+        use_enhanced = any([has_context, has_auto_context, has_retrieval, has_llm, has_tenant, has_holistic])
         print(f"DEBUG: Enhanced features will be used: {use_enhanced}")
         
         # Always apply basic cleaning first (Layers 1-2)
@@ -127,6 +129,28 @@ async def clean_subtitles(
             if tenant_id:
                 config.tenant_id = tenant_id
             
+            # Configure auto-context generation
+            config.context_mode = getattr(request, 'context_mode', 'none')
+            config.auto_context_options = {
+                'max_entities': 20,
+                'confidence_threshold': 0.6
+            }
+            
+            # Configure contextual correction mode  
+            config.correction_mode = getattr(request, 'correction_mode', 'balanced')
+            
+            # Configure ML-based correction
+            config.enable_ml_correction = getattr(request, 'enable_ml_correction', True)
+            config.ml_correction_mode = getattr(request, 'ml_correction_mode', 'balanced')
+            
+            # Configure holistic correction
+            enable_holistic = getattr(request, 'enable_holistic_correction', False)
+            
+            print(f"DEBUG: context_mode set to: {config.context_mode}")
+            print(f"DEBUG: correction_mode set to: {config.correction_mode}")
+            print(f"DEBUG: ML correction enabled: {config.enable_ml_correction}, mode: {config.ml_correction_mode}")
+            print(f"DEBUG: Holistic correction enabled: {enable_holistic}")
+            
             # Create enhanced cleaner with database session
             enhanced_cleaner = EnhancedSubtitleCleaner(config, db_session=db)
             
@@ -151,6 +175,24 @@ async def clean_subtitles(
             # Update document with enhanced corrections
             for i, seg in enumerate(cleaned_document.segments):
                 seg.text = enhanced_segments[i]['text']
+            
+            # Apply holistic correction if enabled
+            if enable_holistic:
+                from app.services.holistic_subtitle_corrector import get_holistic_corrector
+                
+                print("DEBUG: Applying holistic document-level correction")
+                
+                # Serialize to SRT format for holistic corrector
+                srt_content = SubtitleSerializer.serialize(cleaned_document, request.format)
+                
+                # Apply holistic correction
+                holistic_corrector = get_holistic_corrector()
+                corrected_content = holistic_corrector.correct_subtitles(srt_content)
+                
+                # Parse back to document
+                cleaned_document = SubtitleParser.parse(corrected_content, request.format)
+                
+                print("DEBUG: Holistic correction complete")
             
             # Merge metadata
             modifications.update(enhanced_metadata)
@@ -191,7 +233,8 @@ async def clean_subtitles(
                 "modifications": modifications,
                 "validation_issues": [issue.to_dict() for issue in validation_issues],
                 "stats": validator.get_stats(cleaned_document),
-                "enhanced_features": modifications if use_enhanced else None
+                "enhanced_features": modifications if use_enhanced else None,
+                "auto_context": modifications.get("auto_context") if use_enhanced else None
             },
             errors=[]
         )

@@ -120,6 +120,38 @@ class CleanRequest(BaseModel):
     tenant_id: Optional[str] = Field(default=None, description="Tenant ID for Layer 6")
     region_hint: Optional[str] = Field(default=None, description="Regional hint for retrieval")
     
+    # Auto-context generation
+    context_mode: Optional[str] = Field(
+        default="none",
+        description="Context generation mode: 'none' (default), 'auto' (automatic), 'manual' (user-provided only), 'hybrid' (both), 'smart' (adaptive)",
+        pattern="^(none|auto|manual|hybrid|smart)$"
+    )
+    
+    # Contextual correction mode
+    correction_mode: Optional[str] = Field(
+        default="balanced",
+        description="Contextual correction mode: 'legacy' (original behavior), 'conservative' (high precision), 'balanced' (balanced precision/recall), 'aggressive' (high recall)",
+        pattern="^(legacy|conservative|balanced|aggressive)$"
+    )
+    
+    # ML-based correction
+    enable_ml_correction: Optional[bool] = Field(
+        default=True,
+        description="Enable ML-based context correction using BERT/T5 models"
+    )
+    
+    ml_correction_mode: Optional[str] = Field(
+        default="balanced",
+        description="ML correction mode: 'fast' (high confidence only), 'balanced' (medium), 'quality' (with LLM fallback)",
+        pattern="^(fast|balanced|quality)$"
+    )
+    
+    # Holistic correction (document-level understanding)
+    enable_holistic_correction: Optional[bool] = Field(
+        default=False,
+        description="Enable holistic document-level context correction (understands entire document before corrections)"
+    )
+    
     @field_validator("content", mode="after")
     @classmethod
     def validate_content_not_empty(cls, v: str) -> str:

@@ -138,6 +138,11 @@ class ImprovedContextExtractor:
                 re.IGNORECASE
             ),
             
+            # Acronym + Name patterns (AC Milan, FC Barcelona, LA Galaxy)
+            'acronym_plus_name': re.compile(
+                r'\b[A-Z]{2,}\s+[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*\b'
+            ),
+            
             # Persons with titles
             'person_with_title': re.compile(
                 r'\b(?:Dr|Prof|President|Governor|Senator|General|Commander|Captain|Mr|Mrs|Ms|Judge|Rev)\.?\s+[A-Z][a-z]+(?:\s+(?:De|Da|Di|Van|Von|Le|La)?(?:\s+[A-Z][a-z]+)+)',
@@ -151,7 +156,13 @@ class ImprovedContextExtractor:
             
             # Organizations (enhanced)
             'organization': re.compile(
-                r'\b(?:[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*)\s+(?:Inc|Corp|LLC|Ltd|Company|Group|Association|Institute|University|College|Foundation|Agency|Department|Bureau|Office|Center|Centre|Army|Force|Police|Command|Network|ESN|Military)\b'
+                r'\b(?:[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*)\s+(?:Inc|Corp|LLC|Ltd|Company|Group|Association|Institute|University|College|Foundation|Agency|Department|Bureau|Office|Center|Centre|Army|Force|Police|Command|Network|ESN|Military|CP|FC|CF|AC|SC)\b'
+            ),
+            
+            # Country names (single words)
+            'country': re.compile(
+                r'\b(?:Uruguay|Spain|Italy|France|England|Germany|Brazil|Argentina|Portugal|Netherlands|Belgium|Croatia|Nigeria|Ghana|Cameroon|Egypt|Morocco|Japan|Korea|China|India|USA|Mexico|Colombia|Chile|Peru|Ecuador)\b',
+                re.IGNORECASE
             ),
             
             # Acronyms (but filter common ones)

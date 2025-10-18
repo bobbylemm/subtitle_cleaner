@@ -9,6 +9,7 @@ from pathlib import Path
 
 from app.services.cleaner import SubtitleCleaner
 from app.services.smart_entity_matcher import SmartEntityMatcher
+from app.services.ml_context_corrector import get_ml_corrector, CorrectionMode
 from app.services.context_extraction_improved import (
     ImprovedContextExtractor as EnhancedContextExtractor,
     ContextSource, 
@@ -59,6 +60,17 @@ class EnhancedCleaningConfig:
     min_confidence_apply: ConfidenceLevel = ConfidenceLevel.MEDIUM
     use_postgresql: bool = True  # Use PostgreSQL by default
     
+    # Auto-context generation
+    context_mode: str = "none"  # none, auto, manual, hybrid, smart
+    auto_context_options: Optional[Dict] = None
+    
+    # Contextual correction engine
+    correction_mode: str = "balanced"  # legacy, conservative, balanced, aggressive
+    
+    # ML-based correction
+    enable_ml_correction: bool = True
+    ml_correction_mode: str = "balanced"  # fast, balanced, or quality
+    
     # General
     cache_ttl: int = 900  # 15 minutes
     parallel_processing: bool = True
@@ -85,6 +97,10 @@ class EnhancedSubtitleCleaner:
         self.context_extractor = EnhancedContextExtractor(
             cache_ttl=self.config.cache_ttl
         ) if self.config.enable_context_extraction else None
+        
+        # Initialize Auto-Context Manager
+        from app.services.statistical_context_extractor import AutoContextManager
+        self.auto_context_manager = AutoContextManager()
         
         # Initialize Layer 4: Retrieval
         self.retriever = OnDemandRetriever(
@@ -152,15 +168,85 @@ class EnhancedSubtitleCleaner:
             # segments = await self._apply_basic_cleaning(segments, language)
             metadata["layers_applied"].extend(["layer1_hygiene", "layer2_stabilization"])
             
-            # Step 2: Extract context from user sources (Layer 3)
-            context_lexicon = {}
-            if self.config.enable_context_extraction and self.config.context_sources:
-                print(f"DEBUG: Extracting context from {len(self.config.context_sources)} sources")
+            # Step 2: Handle context generation based on mode
+            context_sources = self.config.context_sources or []
+            context_lexicon = {}  # Initialize early for auto-context
+            
+            # Apply auto-context generation if enabled
+            if self.config.context_mode != "none":
+                print(f"DEBUG: Auto-context mode enabled: {self.config.context_mode}")
+                from app.services.statistical_context_extractor import ContextMode, StatisticalContextExtractor
+                from app.services.context_extraction_improved import ExtractedEntity
+                
+                # Get full document text for analysis
+                document_text = ' '.join(seg.get('text', '') for seg in segments)
+                
+                # Generate context based on mode
+                mode = ContextMode(self.config.context_mode)
+                
+                # For auto mode, directly extract entities instead of creating sources
+                if mode == ContextMode.AUTO:
+                    # Direct entity extraction
+                    stat_extractor = StatisticalContextExtractor()
+                    result = stat_extractor.extract(document_text, self.config.auto_context_options or {})
+                    
+                    if result.entities:
+                        # Convert to ExtractedEntity format for compatibility
+                        for entity_text, confidence in result.entities.items():
+                            extracted_entity = ExtractedEntity(
+                                text=entity_text,
+                                canonical_form=entity_text,  # Use the entity text as canonical form
+                                entity_type="auto_detected",
+                                confidence=confidence,
+                                source_id="auto_generated",
+                                context=f"Automatically extracted from document (domain: {result.domain})"
+                            )
+                            context_lexicon[entity_text] = extracted_entity
+                        
+                        metadata["auto_context"] = {
+                            "source": "auto_generated",
+                            "entities_found": len(result.entities),
+                            "confidence": result.confidence,
+                            "domain": result.domain
+                        }
+                        
+                        print(f"DEBUG: Auto-extracted {len(result.entities)} entities directly")
+                        print(f"DEBUG: Auto entities include: Man United={('Man United' in result.entities)}, Upamecano={('Upamecano' in result.entities)}")
+                        logger.info(f"Auto-extracted entities: {list(result.entities.keys())[:10]}")
+                else:
+                    # Use the standard flow for other modes
+                    auto_sources, auto_metadata = await self.auto_context_manager.generate_context(
+                        content=document_text,
+                        mode=mode,
+                        user_sources=context_sources,
+                        options=self.config.auto_context_options
+                    )
+                    
+                    # Update context sources
+                    if auto_sources:
+                        context_sources = auto_sources
+                        metadata["auto_context"] = auto_metadata
+                        print(f"DEBUG: Auto-generated {len(auto_sources)} context sources")
+                        logger.info(f"Auto-generated context with mode '{mode.value}': {auto_metadata}")
+                        
+                        # Update config to use the generated sources
+                        self.config.context_sources = context_sources
+                    else:
+                        print(f"DEBUG: No auto-context sources generated")
+            
+            # Step 2b: Extract context from sources (manual or auto-generated)
+            # Note: context_lexicon may already have entities from auto mode
+            if self.config.enable_context_extraction and context_sources:
+                print(f"DEBUG: Extracting context from {len(context_sources)} sources")
                 try:
-                    context_lexicon = await self._extract_context()
+                    # Extract from sources and merge with any auto-extracted entities
+                    additional_lexicon = await self._extract_context()
+                    context_lexicon.update(additional_lexicon)
                     print(f"DEBUG: Extracted {len(context_lexicon)} entities")
                     if len(context_lexicon) > 0:
-                        for key, entity in list(context_lexicon.items())[:10]:  # Show first 10
+                        # Use list() to avoid dictionary iteration issues
+                        items = list(context_lexicon.items())
+                        for key, entity in items[:10]:  # Show first 10
                             print(f"DEBUG: Entity: key='{key}', text='{entity.text}', confidence={entity.confidence:.2f}")
                     else:
                         print(f"DEBUG: No entities extracted - checking extractor type")
@@ -224,7 +310,8 @@ class EnhancedSubtitleCleaner:
             # Step 7: Apply context-based corrections
             if context_lexicon:
                 print(f"DEBUG: Applying context corrections with {len(context_lexicon)} entities")
-                print(f"DEBUG: Context entities: {list(context_lexicon.keys())}")
+                print(f"DEBUG: Context entities: {list(context_lexicon.keys())[:10]}")
+                print(f"DEBUG: Has Man United: {'Man United' in context_lexicon}, Has Upamecano: {'Upamecano' in context_lexicon}")
                 segments, applied_corrections = self._apply_context_corrections(segments, context_lexicon)
                 print(f"DEBUG: Context corrections applied: {applied_corrections}")
                 
@@ -448,22 +535,55 @@ class EnhancedSubtitleCleaner:
                 print(f"DEBUG: Using SmartEntityMatcher with {len(context_lexicon)} context entities")
                 print(f"DEBUG: Context entities: {[entity.text for entity in context_lexicon.values()]}")
                 
-                # Find corrections using smart matching
-                corrections = matcher.find_smart_corrections(document_text, context_lexicon)
+                # Find corrections using smart matching with correction mode
+                correction_mode = getattr(self.config, 'correction_mode', 'balanced')
+                corrections = matcher.find_smart_corrections(
+                    document_text, 
+                    context_lexicon, 
+                    correction_mode=correction_mode
+                )
             else:
                 # Fallback to old method
                 document_text = ' '.join(seg.get('text', '') for seg in segments)
                 corrections = matcher.find_corrections(document_text, context_lexicon)
         except Exception as e:
             logger.error(f"Failed to initialize matcher: {e}")
-            return segments
+            import traceback
+            traceback.print_exc()
+            return segments, {}
         
         if not corrections:
             print(f"DEBUG: No corrections found by matcher")
-            return segments
+            return segments, {}
         
         print(f"DEBUG: Matcher found {len(corrections)} corrections")
         print(f"DEBUG: Corrections: {corrections}")
+        
+        # Use ML-based correction if enabled
+        if self.config.enable_ml_correction:
+            print(f"DEBUG: Using ML-based correction with mode: {self.config.ml_correction_mode}")
+            ml_corrector = get_ml_corrector(self.config.ml_correction_mode)
+            ml_corrected_segments = []
+            
+            for segment in segments:
+                text = segment.get('text', '')
+                if text.strip():
+                    # Apply ML corrections
+                    corrected_text, ml_corrections = ml_corrector.correct_text(text, context_lexicon)
+                    
+                    if ml_corrections:
+                        print(f"DEBUG: ML corrections in segment {segment.get('idx', '?')}: {ml_corrections}")
+                    
+                    ml_corrected_segments.append({
+                        **segment,
+                        'text': corrected_text,
+                        'ml_corrected': text != corrected_text
+                    })
+                else:
+                    ml_corrected_segments.append(segment)
+            
+            # Use ML-corrected segments as base for further corrections
+            segments = ml_corrected_segments
         
         # Apply corrections to segments with word boundary checking
         corrected_segments = []
@@ -475,7 +595,10 @@ class EnhancedSubtitleCleaner:
             corrections_in_segment = 0
             
             # Apply corrections with word boundaries
-            for incorrect, correct in corrections.items():
+            # Sort corrections by length (longest first) to prevent partial replacements
+            sorted_corrections = sorted(corrections.items(), key=lambda x: len(x[0]), reverse=True)
+            
+            for incorrect, correct in sorted_corrections:
                 # Use word boundary regex for accurate replacement
                 pattern = re.compile(r'\b' + re.escape(incorrect) + r'\b', re.IGNORECASE)
                 

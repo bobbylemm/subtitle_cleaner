@@ -99,19 +99,36 @@ class SmartEntityMatcher:
     def find_smart_corrections(
         self,
         document_text: str,
-        context_entities: Dict[str, any]
+        context_entities: Dict[str, any],
+        correction_mode: str = "balanced"
     ) -> Dict[str, str]:
         """
         Find intelligent corrections avoiding common word replacement.
+        Now enhanced with document-wide normalization.
         
         Args:
             document_text: The full document text
             context_entities: Dictionary of extracted entities from context
+            correction_mode: Mode for contextual correction engine
             
         Returns:
             Dictionary of original text -> corrected text mappings
         """
         corrections = {}
+        
+        # First, use document-wide normalization to find patterns
+        from app.services.document_normalizer import EnhancedDocumentNormalizer
+        normalizer = EnhancedDocumentNormalizer()
+        
+        # Get document-based normalizations with contextual correction engine
+        doc_normalizations = normalizer.normalize_document(
+            document_text,
+            context_entities,
+            use_contextual_engine=True,
+            correction_mode=correction_mode
+        )
+        corrections.update(doc_normalizations)
+        logger.info(f"Document normalizer found {len(doc_normalizations)} corrections")
         
         # Convert entities to searchable format with metadata
         entity_info = self._analyze_entities(context_entities)
@@ -124,6 +141,10 @@ class SmartEntityMatcher:
         
         # Match each document entity against context entities
         for doc_entity in document_entities:
+            # Skip if already normalized
+            if doc_entity in corrections:
+                continue
+                
             # Skip if it's a common word
             if self._is_common_word(doc_entity):
                 continue
@@ -136,7 +157,10 @@ class SmartEntityMatcher:
                 logger.info(f"Match ({best_match.match_type}, {best_match.confidence:.2f}): "
                           f"'{doc_entity}' -> '{best_match.replacement}'")
         
-        return corrections
+        # Filter out overlapping corrections to prevent duplicates
+        filtered_corrections = self._filter_overlapping_corrections(corrections)
+        
+        return filtered_corrections
     
     def _analyze_entities(self, context_entities: Dict[str, any]) -> List[Tuple[str, EntityType]]:
         """Analyze and categorize context entities"""
@@ -148,6 +172,53 @@ class SmartEntityMatcher:
             entity_info.append((text, entity_type))
         
         return entity_info
+    
+    def _filter_overlapping_corrections(self, corrections: Dict[str, str]) -> Dict[str, str]:
+        """
+        Filter out overlapping corrections to prevent duplicate applications.
+        For example, if we have both "Romano" -> "Fabrizio Romano" and 
+        "Fabrizio Romano" -> "Fabrizio Romano", we keep only the complete one.
+        """
+        if not corrections:
+            return corrections
+        
+        filtered = {}
+        
+        # Sort by length (longest first) to prioritize complete matches
+        sorted_items = sorted(corrections.items(), key=lambda x: len(x[0]), reverse=True)
+        
+        for original, replacement in sorted_items:
+            # Check if this correction would cause duplication
+            should_add = True
+            
+            # Don't add if the original is already part of the replacement
+            # e.g., don't add "Romano" -> "Fabrizio Romano" if we already have full name
+            if original in replacement and original != replacement:
+                # Check if we already have a correction for the full phrase
+                for existing_orig, existing_repl in filtered.items():
+                    if original in existing_orig and existing_repl == replacement:
+                        should_add = False
+                        break
+            
+            # Don't add if this is a substring of an already added correction
+            for existing_orig in filtered:
+                if original != existing_orig:
+                    # If original is substring of existing, skip it
+                    if original in existing_orig and len(original) < len(existing_orig):
+                        should_add = False
+                        break
+                    # If existing is substring of original, remove existing
+                    elif existing_orig in original and len(existing_orig) < len(original):
+                        del filtered[existing_orig]
+                        break
+            
+            if should_add:
+                # Final check: don't create identity corrections
+                if original != replacement:
+                    filtered[original] = replacement
+        
+        logger.info(f"Filtered corrections from {len(corrections)} to {len(filtered)}")
+        return filtered
     
     def _classify_entity(self, text: str) -> EntityType:
         """Classify an entity based on its characteristics"""
@@ -397,7 +468,14 @@ class SmartEntityMatcher:
             # Apply boost
             total_score = min(similarity + boost, 1.0)
             
-            if total_score > best_score and total_score > 0.7:
+            # Lower threshold for potential phonetic matches (like Mecano -> Upamecano)
+            # Check if it could be a truncation or phonetic match
+            threshold = 0.7
+            if doc_lower in entity_lower or entity_lower.endswith(doc_lower):
+                # Likely a truncation, lower threshold
+                threshold = 0.6
+            
+            if total_score > best_score and total_score > threshold:
                 best_score = total_score
                 best_match = EntityMatch(
                     original=doc_text,
