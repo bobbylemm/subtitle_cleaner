@@ -152,6 +152,12 @@ class CleanRequest(BaseModel):
         description="Enable holistic document-level context correction (understands entire document before corrections)"
     )
     
+    # Robust correction (two-pass with guards and calibration)
+    enable_robust_correction: Optional[bool] = Field(
+        default=False,
+        description="Enable robust two-pass correction with position-aware context, entity guards, and calibrated decisions"
+    )
+    
     @field_validator("content", mode="after")
     @classmethod
     def validate_content_not_empty(cls, v: str) -> str:

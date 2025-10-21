@@ -301,6 +301,7 @@ dependencies = [
     { name = "spacy" },
     { name = "sqlmodel" },
     { name = "srt" },
+    { name = "symspellpy" },
     { name = "torch" },
     { name = "trafilatura" },
     { name = "transformers" },
@@ -356,6 +357,7 @@ requires-dist = [
     { name = "spacy", specifier = ">=3.8.7" },
     { name = "sqlmodel", specifier = ">=0.0.24" },
     { name = "srt", specifier = ">=3.5.3" },
+    { name = "symspellpy", specifier = ">=6.7.7" },
     { name = "torch", specifier = ">=2.8.0" },
     { name = "trafilatura", specifier = ">=2.0.0" },
     { name = "transformers", specifier = ">=4.56.1" },
@@ -587,6 +589,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/8c/8b/57666417c0f90f08bcafa776861060426765fdb422eb10212086fb811d26/dnspython-2.8.0.tar.gz", hash = "sha256:181d3c6996452cb1189c4046c61599b84a5a86e099562ffde77d26984ff26d0f", size = 368251, upload-time = "2025-09-07T18:58:00.022Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ba/5a/18ad964b0086c6e62e2e7500f7edc89e3faa45033c71c1893d34eed2b2de/dnspython-2.8.0-py3-none-any.whl", hash = "sha256:01d9bbc4a2d76bf0db7c1f729812ded6d912bd318d3b1cf81d30c0f845dbf3af", size = 331094, upload-time = "2025-09-07T18:57:58.071Z" },
+]
+
+[[package]]
+name = "editdistpy"
+version = "0.1.6"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/0f/e3/be4d6836250feb6347799f4aa683927b7aa5db8e849906c6e54e10db2152/editdistpy-0.1.6.tar.gz", hash = "sha256:33cef3a82c6eb007edc02af65d8c99d67b75ce8e9c980105da4bd8256bcb4b25", size = 117947, upload-time = "2025-06-07T12:00:49.932Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/81/f6/8f204358a583698347e575f34797061a0d6827f3b870904a6ef4d9463bf2/editdistpy-0.1.6-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:28baa481c7e283bb485d717ab2983d1e02820cb7809bd809c22d2c900dfa8a35", size = 158903, upload-time = "2025-06-07T12:00:30.54Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/97/86647e1d6a02923dfb9f933f7ffaf0eeff5a764fcf795ec0068ef8cc8993/editdistpy-0.1.6-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:9f15444910036df38d654a36509c767b31ffb80bf7100709c456c62dc5fda853", size = 158731, upload-time = "2025-06-07T12:00:31.99Z" },
+    { url = "https://files.pythonhosted.org/packages/f5/e0/2253b73b598b338cc71b3f3d97b1156cc5d11c43216c1834ce33bec93a3f/editdistpy-0.1.6-cp313-cp313-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fd8395ae5c9ddb5d31ce4f9be4cf80d662a73dcbd79fe5e1b1d0bdb6cba363ea", size = 158782, upload-time = "2025-06-07T12:00:33.826Z" },
+    { url = "https://files.pythonhosted.org/packages/db/f6/a4ab9df1c044fb1f04019a031b642c40bc6c4f4ebdf8853e95ef8cad52b0/editdistpy-0.1.6-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:e3b2865c571a069429a6374189d570c26c2ccb3a73fe5871f36d8a28882669fc", size = 1149388, upload-time = "2025-06-07T12:00:35.855Z" },
+    { url = "https://files.pythonhosted.org/packages/c7/fc/27b9d5175a46f7ebabeccd6536cef126adbd4628338bac00d62985fc217f/editdistpy-0.1.6-cp313-cp313-win_amd64.whl", hash = "sha256:cdbca54505e29b32b25b8956ac6bef739cdca32351e9548db38f2413ccf802c1", size = 160607, upload-time = "2025-06-07T12:00:39.816Z" },
 ]
 
 [[package]]
@@ -2712,6 +2727,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/83/d3/803453b36afefb7c2bb238361cd4ae6125a569b4db67cd9e79846ba2d68c/sympy-1.14.0.tar.gz", hash = "sha256:d3d3fe8df1e5a0b42f0e7bdf50541697dbe7d23746e894990c030e2b05e72517", size = 7793921, upload-time = "2025-04-27T18:05:01.611Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a2/09/77d55d46fd61b4a135c444fc97158ef34a095e5681d0a6c10b75bf356191/sympy-1.14.0-py3-none-any.whl", hash = "sha256:e091cc3e99d2141a0ba2847328f5479b05d94a6635cb96148ccb3f34671bd8f5", size = 6299353, upload-time = "2025-04-27T18:04:59.103Z" },
+]
+
+[[package]]
+name = "symspellpy"
+version = "6.9.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "editdistpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ce/42/f445e683376bb5eee35db34e062372e0c4cfa6671632cb0b0dafa747e32e/symspellpy-6.9.0.tar.gz", hash = "sha256:5ce8cb8a13e531db03f664407abc9e42e272f16bab7c0639500a8bdd07eee482", size = 2615560, upload-time = "2025-03-09T09:42:33.92Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/54/07/c903a3a42222a4bb6aedf620a63554f577f3020b4f56f339889718126c1c/symspellpy-6.9.0-py3-none-any.whl", hash = "sha256:b6dba96275fdbedc240491854160bbe596dda930f2d58567ad55faf82a4e4b43", size = 2612234, upload-time = "2025-03-09T09:42:32.311Z" },
 ]
 
 [[package]]

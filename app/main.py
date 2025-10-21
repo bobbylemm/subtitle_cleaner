@@ -37,10 +37,26 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     await init_db()
     await redis_client.initialize()
     setup_metrics()
+    
+    # Initialize ML models for scalable pipeline
+    try:
+        from app.services.pipeline_integration import initialize_models
+        initialize_models()
+    except Exception as e:
+        print(f"Warning: Could not initialize ML models: {e}")
+    
     yield
+    
     # Shutdown
     await close_db()
     await redis_client.close()
+    
+    # Cleanup ML models
+    try:
+        from app.services.pipeline_integration import cleanup_models
+        cleanup_models()
+    except Exception:
+        pass
 
 
 app = FastAPI(

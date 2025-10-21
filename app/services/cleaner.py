@@ -132,58 +132,6 @@ class SubtitleCleaner:
     async def _phase2_placeholder(self) -> None:
         """Placeholder - Phase 2 removed"""
         return
-            
-        try:
-            # Check which Phase 2 features are enabled
-            needs_embedder = any([
-                getattr(self.settings, 'enable_topic_segmentation', False),
-                getattr(self.settings, 'enable_speaker_tracking', False),
-                getattr(self.settings, 'enable_coreference_resolution', False)
-            ])
-            
-            # Initialize shared embedder if needed
-            if needs_embedder:
-                try:
-                    from app.ml.semantic_embedder import SemanticEmbedder
-                    self.phase2_components['embedder'] = SemanticEmbedder(
-                        model_type="minilm",
-                        use_cache=True
-                    )
-                except Exception as e:
-                    logger.warning(f"Could not initialize semantic embedder: {e}")
-                    # Phase 2 will use fallback methods
-            
-            # Initialize topic segmentation
-            if getattr(self.settings, 'enable_topic_segmentation', False):
-                self.phase2_components['topic_segmenter'] = TopicSegmenter(
-                    embedder=self.phase2_components.get('embedder'),
-                    boundary_threshold=0.6,
-                    min_segment_size=3
-                )
-                logger.info("Topic segmentation initialized")
-            
-            # Initialize speaker tracking
-            if getattr(self.settings, 'enable_speaker_tracking', False):
-                self.phase2_components['speaker_tracker'] = LightweightSpeakerTracker(
-                    embedder=self.phase2_components.get('embedder'),
-                    similarity_threshold=0.55  # Lower threshold for better grouping
-                )
-                logger.info("Speaker tracking initialized")
-            
-            # Initialize coreference resolution
-            if getattr(self.settings, 'enable_coreference_resolution', False):
-                self.phase2_components['coreference_resolver'] = EfficientCoreferenceResolver(
-                    embedder=self.phase2_components.get('embedder'),
-                    max_distance=5
-                )
-                logger.info("Coreference resolution initialized")
-                
-            self._phase2_initialized = True
-            logger.info(f"Phase 2 components initialized: {list(self.phase2_components.keys())}")
-            
-        except Exception as e:
-            logger.error(f"Failed to initialize Phase 2 components: {e}")
-            self._phase2_initialized = False
     
     # Phase 3 initialization removed - not part of core requirements  
     async def _phase3_placeholder(self) -> None:

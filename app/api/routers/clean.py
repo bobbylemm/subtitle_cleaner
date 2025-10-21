@@ -2,6 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any, Optional, List
 import time
 import traceback
+import logging
+
+logger = logging.getLogger(__name__)
 
 from app.core.security import require_api_key
 from app.core.rate_limit import standard_rate_limit
@@ -85,10 +88,11 @@ async def clean_subtitles(
         has_llm = hasattr(request, 'enable_llm') and request.enable_llm  
         has_tenant = hasattr(request, 'tenant_id') and request.tenant_id
         has_holistic = hasattr(request, 'enable_holistic_correction') and request.enable_holistic_correction
+        has_robust = hasattr(request, 'enable_robust_correction') and request.enable_robust_correction
         
-        print(f"DEBUG: has_context={has_context}, has_auto_context={has_auto_context}, has_retrieval={has_retrieval}, has_llm={has_llm}, has_tenant={has_tenant}, has_holistic={has_holistic}")
+        print(f"DEBUG: has_context={has_context}, has_auto_context={has_auto_context}, has_retrieval={has_retrieval}, has_llm={has_llm}, has_tenant={has_tenant}, has_holistic={has_holistic}, has_robust={has_robust}")
         
-        use_enhanced = any([has_context, has_auto_context, has_retrieval, has_llm, has_tenant, has_holistic])
+        use_enhanced = any([has_context, has_auto_context, has_retrieval, has_llm, has_tenant, has_holistic, has_robust])
         print(f"DEBUG: Enhanced features will be used: {use_enhanced}")
         
         # Always apply basic cleaning first (Layers 1-2)
@@ -143,13 +147,15 @@ async def clean_subtitles(
             config.enable_ml_correction = getattr(request, 'enable_ml_correction', True)
             config.ml_correction_mode = getattr(request, 'ml_correction_mode', 'balanced')
             
-            # Configure holistic correction
+            # Configure holistic and robust correction
             enable_holistic = getattr(request, 'enable_holistic_correction', False)
+            enable_robust = getattr(request, 'enable_robust_correction', False)
             
             print(f"DEBUG: context_mode set to: {config.context_mode}")
             print(f"DEBUG: correction_mode set to: {config.correction_mode}")
             print(f"DEBUG: ML correction enabled: {config.enable_ml_correction}, mode: {config.ml_correction_mode}")
             print(f"DEBUG: Holistic correction enabled: {enable_holistic}")
+            print(f"DEBUG: Robust correction enabled: {enable_robust}")
             
             # Create enhanced cleaner with database session
             enhanced_cleaner = EnhancedSubtitleCleaner(config, db_session=db)
@@ -193,6 +199,25 @@ async def clean_subtitles(
                 cleaned_document = SubtitleParser.parse(corrected_content, request.format)
                 
                 print("DEBUG: Holistic correction complete")
+            
+            # Apply robust correction if enabled
+            if enable_robust:
+                # Fallback to old robust corrector for now
+                from app.services.robust_subtitle_corrector import get_robust_corrector
+                
+                logger.info("Applying robust two-pass correction with guards")
+                
+                # Serialize to SRT format for robust corrector
+                srt_content = SubtitleSerializer.serialize(cleaned_document, request.format)
+                
+                # Apply robust correction
+                robust_corrector = get_robust_corrector()
+                corrected_content = robust_corrector.correct_subtitles(srt_content)
+                
+                # Parse back to document
+                cleaned_document = SubtitleParser.parse(corrected_content, request.format)
+                
+                logger.info("Robust correction complete")
             
             # Merge metadata
             modifications.update(enhanced_metadata)

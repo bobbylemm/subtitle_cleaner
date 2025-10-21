@@ -1,0 +1,79 @@
+# Subtitle Correction Pipeline Configuration
+# All thresholds and parameters are configurable here
+
+# Context Graph Settings
+context:
+  alpha: 0.7          # Blend factor for similarity (0=position only, 1=semantic only)
+  tau: 7.0           # Position decay factor
+  k: 8               # Number of top neighbors to keep
+  floor: 0.5         # Minimum similarity threshold
+  embedding_model: "paraphrase-multilingual-MiniLM-L12-v2"
+
+# Pass-1: Conservative Cleaning
+pass1:
+  max_edit_ratio: 0.15     # Maximum edit distance ratio per segment
+  threshold: 0.75          # Acceptance threshold for corrections
+  symspell:
+    max_distance: 2        # Maximum edit distance for suggestions
+    prefix_length: 7       # Prefix length for indexing
+
+# Pass-2: Contextual Disambiguation  
+pass2:
+  max_edit_ratio: 0.30     # Maximum edit distance ratio per segment
+  threshold: 0.70          # Acceptance threshold for corrections
+  mlm_model: "bert-base-multilingual-cased"
+  candidate_sources:
+    mlm_topk: 8            # Number of MLM predictions
+    edit_neighbors: 12     # Number of edit-distance neighbors
+    enable_phonetic: true  # Enable phonetic matching
+    context_vocab: 10      # Words from context to consider
+
+# Vocabulary Building
+vocabulary:
+  min_freq: 2              # Minimum frequency for vocabulary inclusion
+  min_length: 3            # Minimum word length
+  max_length: 40           # Maximum word length
+
+# Guard Settings
+guards:
+  ner_labels:              # NER labels to protect
+    - PERSON
+    - ORG
+    - LOC
+    - PRODUCT
+    - WORK_OF_ART
+  protect_numbers: true
+  protect_dates: true
+  protect_urls: true
+  protect_times: true
+  protect_currency: true
+
+# Feature Weights for Ranking
+ranker_weights:
+  bias: -0.4
+  delta_logp: 0.7          # MLM probability difference
+  edit_penalty: 1.0        # Penalty for large edits
+  vocab_support: 0.15      # Bonus for in-vocabulary words
+  neighbor_support: 0.12   # Bonus for words in neighbor context
+  locked_penalty: 2.0      # Penalty for modifying locked spans
+
+# Performance Settings
+performance:
+  cache_embeddings: true
+  batch_size: 32
+  max_segment_length: 512
+  enable_gpu: true
+
+# Feature Flags
+features:
+  enable_pass1: true
+  enable_pass2: true
+  enable_guards: true
+  enable_ner: true
+  rebuild_context: true    # Rebuild context after Pass-1
+  
+# Logging
+logging:
+  level: INFO
+  trace_corrections: true
+  metrics_enabled: true
