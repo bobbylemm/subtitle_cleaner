@@ -50,19 +50,11 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: Optional[str] = None
     REDIS_MAX_CONNECTIONS: int = 50
 
-    # Enhanced Features (Layers 4-6)
+    # Universal Corrector Settings
     OPENAI_API_KEY: Optional[str] = None
-    OPENAI_MODEL: str = "gpt-3.5-turbo"
-    OPENAI_MAX_TOKENS: int = 150
+    OPENAI_MODEL: str = "gpt-4o"
+    OPENAI_MAX_TOKENS: int = 4096
     OPENAI_TEMPERATURE: float = 0.0
-    
-    ENABLE_RETRIEVAL: bool = Field(True, description="Enable Layer 4 retrieval")
-    ENABLE_LLM_SELECTION: bool = Field(False, description="Enable Layer 5 LLM selection (requires OPENAI_API_KEY)")
-    ENABLE_TENANT_MEMORY: bool = Field(True, description="Enable Layer 6 tenant memory")
-    
-    RETRIEVAL_MAX_SPANS: int = Field(5, description="Max suspicious spans to retrieve per document")
-    RETRIEVAL_MIN_SOURCES: int = Field(2, description="Min sources for consensus")
-    LLM_CONFIDENCE_THRESHOLD: float = Field(0.7, description="Min confidence for LLM selections")
 
     # Rate limiting
     RATE_LIMIT_ENABLED: bool = True

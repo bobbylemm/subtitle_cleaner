@@ -10,7 +10,7 @@ from prometheus_client import CollectorRegistry, Counter, Histogram, generate_la
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
-from app.api.routers import clean, glossaries, health, preview, validate
+from app.api.routers import health, validate, universal
 from app.core.config import settings
 from app.infra.cache import redis_client
 from app.infra.db import close_db, init_db
@@ -37,41 +37,25 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     await init_db()
     await redis_client.initialize()
     setup_metrics()
-    
-    # Initialize ML models for scalable pipeline
-    try:
-        from app.services.pipeline_integration import initialize_models
-        initialize_models()
-    except Exception as e:
-        print(f"Warning: Could not initialize ML models: {e}")
-    
+
     yield
     
     # Shutdown
     await close_db()
     await redis_client.close()
-    
-    # Cleanup ML models
-    try:
-        from app.services.pipeline_integration import cleanup_models
-        cleanup_models()
-    except Exception:
-        pass
 
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="API for cleaning and perfecting SRT/WebVTT subtitles across languages",
+    description="Universal Subtitle Corrector API",
     version=settings.APP_VERSION,
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None,
     openapi_url="/openapi.json" if settings.DEBUG else None,
     lifespan=lifespan,
     openapi_tags=[
-        {"name": "clean", "description": "Clean and process subtitle files"},
+        {"name": "universal", "description": "Universal Subtitle Correction"},
         {"name": "validate", "description": "Validate subtitle files"},
-        {"name": "preview", "description": "Preview cleaning results"},
-        {"name": "glossaries", "description": "Manage glossary terms"},
         {"name": "health", "description": "Health and monitoring endpoints"},
     ],
 )
@@ -93,24 +77,14 @@ if settings.CORS_ORIGINS:
 # Include routers
 app.include_router(health.router, tags=["health"])
 app.include_router(
-    clean.router,
-    prefix=f"{settings.API_PREFIX}/clean",
-    tags=["clean"],
+    universal.router,
+    prefix=f"{settings.API_PREFIX}/universal",
+    tags=["universal"],
 )
 app.include_router(
     validate.router,
     prefix=f"{settings.API_PREFIX}/validate",
     tags=["validate"],
-)
-app.include_router(
-    preview.router,
-    prefix=f"{settings.API_PREFIX}/preview",
-    tags=["preview"],
-)
-app.include_router(
-    glossaries.router,
-    prefix=f"{settings.API_PREFIX}/glossaries",
-    tags=["glossaries"],
 )
 
 

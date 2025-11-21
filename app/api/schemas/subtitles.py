@@ -109,9 +109,11 @@ class CleanRequest(BaseModel):
     ]
     is_base64: bool = Field(default=False, description="Whether content is base64 encoded")
     format: SubtitleFormat = Field(default=SubtitleFormat.SRT, description="Input format")
+    output_format: Optional[SubtitleFormat] = Field(default=None, description="Output format (defaults to input format)")
     language: Language = Field(default=Language.EN, description="Content language")
     settings: Optional[Dict[str, Any]] = Field(default=None, description="Processing settings")
-    
+    metadata: Optional[Dict[str, Any]] = Field(default=None, description="User context metadata (e.g., channel name, tags, description)")
+
     # Enhanced features (Layers 3-6)
     context_sources: Optional[List[Dict[str, Any]]] = Field(default=None, description="Context sources for Layer 3")
     enable_retrieval: Optional[bool] = Field(default=False, description="Enable Layer 4 retrieval")

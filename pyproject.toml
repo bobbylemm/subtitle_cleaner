@@ -17,6 +17,7 @@ dependencies = [
     "happytransformer>=2.4.1",
     "jellyfish>=1.2.0",
     "language-tool-python>=2.9.4",
+    "lingua-language-detector>=2.0.2",
     "numpy>=2.3.3",
     "onnxruntime>=1.22.1",
     "openai>=1.109.0",
@@ -45,6 +46,7 @@ dependencies = [
     "torch>=2.8.0",
     "trafilatura>=2.0.0",
     "transformers>=4.56.1",
+    "wordfreq>=3.1.1",
 ]
 
 [dependency-groups]
