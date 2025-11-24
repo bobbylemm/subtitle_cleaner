@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 import time
 
 from app.core.security import require_api_key
-from app.core.rate_limit import standard_rate_limit
+from app.core.security import require_api_key
 from app.api.schemas.subtitles import ValidateRequest, ValidateResponse
 from app.domain.models import Settings
 from app.services.parser import SubtitleParser
@@ -15,7 +15,7 @@ router = APIRouter()
 @router.post(
     "/",
     response_model=ValidateResponse,
-    dependencies=[Depends(require_api_key), Depends(standard_rate_limit)]
+    dependencies=[Depends(require_api_key)]
 )
 async def validate_subtitles(request: ValidateRequest) -> ValidateResponse:
     """Validate subtitle content for errors and issues"""

@@ -63,9 +63,25 @@ async def universal_correct(
             corrected_chunk = await service.correct_chunk(chunk, manifest)
             corrected_segments.extend(corrected_chunk)
             
-        # Reconstruct
-        doc.segments = corrected_segments
+        # Calculate Diffs
+        changes = []
+        original_segments = SubtitleParser.parse(content, fmt).segments # Re-parse to get original state
         
+        # Map by index to be safe
+        orig_map = {s.idx: s.text for s in original_segments}
+        
+        for corrected in corrected_segments:
+            original_text = orig_map.get(corrected.idx, "")
+            if original_text != corrected.text:
+                # Simple word-based diff could be here, but for now let's return the full segment change
+                # or try to find the specific changed phrase?
+                # Let's do a simple check: if the change is small, return it.
+                changes.append({
+                    "id": corrected.idx,
+                    "original": original_text,
+                    "corrected": corrected.text
+                })
+
         # Serialize
         output = ""
         for s in doc.segments:
@@ -77,7 +93,8 @@ async def universal_correct(
         return {
             "filename": file.filename,
             "context": manifest.dict(),
-            "corrected_content": output
+            "corrected_content": output,
+            "changes": changes[:50] # Limit to top 50 changes to avoid payload bloat
         }
 
     except Exception as e:

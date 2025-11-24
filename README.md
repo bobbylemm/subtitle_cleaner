@@ -2,25 +2,46 @@
 
 A high-accuracy, domain-agnostic subtitle correction system powered by LLMs and a self-improving Knowledge Base.
 
-## 🚀 Features
+## 🚀 Quick Start
 
-*   **Context-Aware Correction**: Uses a two-stage LLM pipeline to understand the full context (Topic, Industry, Country) before correcting.
-*   **Knowledge Base (Memory)**: Learns from your corrections. If you fix "Mecano" -> "Upamecano" once, it remembers it forever.
-*   **Multi-Dimensional Context**: Distinguishes between terms based on context (e.g., "Chip" in Tech vs. Sports).
-*   **Style Preservation**: Intelligently preserves slang, nicknames, and speaker intent.
-*   **Global Consistency**: Ensures names like "Man United" or "Frenkie de Jong" are consistent throughout the file.
+### Prerequisites
+*   Python 3.13+
+*   OpenAI API Key
 
-## 🛠️ Installation
+### Installation
 
-1.  **Install Dependencies**:
+1.  **Clone & Install**
     ```bash
+    git clone <repo>
+    cd clean_srt
     pip install -r requirements.txt
     ```
-2.  **Set Environment Variables**:
+
+2.  **Configure**
+    Copy `.env.sample` to `.env` and set your `OPENAI_API_KEY`.
     ```bash
-    export OPENAI_API_KEY="your-key"
-    export OPENAI_MODEL="gpt-4o" # Recommended for best results
+    cp .env.sample .env
     ```
+
+3.  **Run**
+    ```bash
+    uvicorn app.main:app --reload
+    ```
+    Open [http://localhost:8000](http://localhost:8000) to use the Web UI.
+
+## 🛠️ Features
+
+*   **Universal Correction**: Uses LLM (GPT-4o) to fix typos, grammar, and phonetic errors while preserving slang.
+*   **Context-Aware**: Automatically detects Topic, Industry, and Country.
+*   **Knowledge Base**: Learns from corrections (stored in `knowledge_base.db`).
+*   **Web UI**: Simple Drag & Drop interface.
+*   **API**: REST API for integration.
+
+## 📚 API Documentation
+
+Once running, visit:
+*   Swagger UI: [http://localhost:8000/docs](http://localhost:8000/docs)
+*   ReDoc: [http://localhost:8000/redoc](http://localhost:8000/redoc)
 
 ## 📖 Usage
 

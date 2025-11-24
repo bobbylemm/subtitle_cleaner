@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Subtitle Corrector</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div class="background-glow"></div>
+
+    <main class="container">
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">✨</span>
+                <h1>Universal <span class="text-gradient">Corrector</span></h1>
+            </div>
+            <p class="tagline">AI-powered subtitle perfection. Context-aware, style-preserving.</p>
+        </header>
+
+        <div class="glass-card main-card">
+            <form id="uploadForm">
+                <!-- Upload Zone -->
+                <div class="upload-zone" id="dropZone">
+                    <input type="file" id="fileInput" accept=".srt,.vtt" hidden>
+                    <div class="upload-content">
+                        <div class="icon-cloud">☁️</div>
+                        <h3>Drag & Drop your subtitle file</h3>
+                        <p>or <span class="browse-link">browse files</span></p>
+                        <p class="file-info" id="fileInfo"></p>
+                    </div>
+                </div>
+
+                <!-- Advanced Options Toggle -->
+                <div class="advanced-toggle">
+                    <button type="button" id="advancedBtn" class="btn-text-small">
+                        <span>⚙️ Advanced Options</span>
+                        <span class="arrow-icon">▼</span>
+                    </button>
+                </div>
+
+                <!-- Context Settings (Hidden) -->
+                <div class="context-section hidden" id="contextSection">
+                    <div class="input-group">
+                        <label for="topic">Topic (Optional)</label>
+                        <input type="text" id="topic" placeholder="Auto-detect" value="">
+                    </div>
+                    <div class="input-group">
+                        <label for="industry">Industry (Optional)</label>
+                        <input type="text" id="industry" placeholder="Auto-detect" value="">
+                    </div>
+                    <div class="input-group">
+                        <label for="country">Country (Optional)</label>
+                        <input type="text" id="country" placeholder="Auto-detect" value="">
+                    </div>
+                </div>
+
+                <!-- Action -->
+                <button type="submit" class="btn-primary" id="submitBtn" disabled>
+                    <span class="btn-text">Correct Subtitles</span>
+                    <div class="loader" id="loader"></div>
+                </button>
+            </form>
+        </div>
+
+        <!-- Results Section (Hidden by default) -->
+        <div class="glass-card result-card hidden" id="resultCard">
+            <div class="success-icon">🎉</div>
+            <h2>Correction Complete!</h2>
+            <div class="stats-grid" id="statsGrid">
+                <!-- Stats will be injected here -->
+            </div>
+
+            <div class="corrections-container hidden" id="correctionsContainer">
+                <h3>✨ Key Corrections</h3>
+                <div class="corrections-grid" id="correctionsGrid">
+                    <!-- Correction chips injected here -->
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn-secondary" id="downloadBtn">Download Corrected File</button>
+                <button class="btn-text" id="resetBtn">Process Another</button>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+
+</html>

@@ -40,15 +40,7 @@ class Settings(BaseSettings):
             raise ValueError("At least one API key must be provided")
         return v  # Return the original string, not the list
 
-    # Database
-    DATABASE_URL: str = Field(
-        "postgresql://subtitle_user:subtitle_pass@localhost:5432/subtitle_db"
-    )
 
-    # Redis
-    REDIS_URL: str = Field("redis://localhost:6379/0")
-    REDIS_PASSWORD: Optional[str] = None
-    REDIS_MAX_CONNECTIONS: int = 50
 
     # Universal Corrector Settings
     OPENAI_API_KEY: Optional[str] = None

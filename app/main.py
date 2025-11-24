@@ -5,15 +5,15 @@ from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from prometheus_client import CollectorRegistry, Counter, Histogram, generate_latest
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
 from app.api.routers import health, validate, universal
 from app.core.config import settings
-from app.infra.cache import redis_client
-from app.infra.db import close_db, init_db
+
 from app.infra.metrics import (
     REQUEST_COUNT,
     REQUEST_DURATION,
@@ -34,15 +34,11 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
 async def lifespan(app: FastAPI) -> AsyncGenerator:
     """Manage application lifecycle"""
     # Startup
-    await init_db()
-    await redis_client.initialize()
     setup_metrics()
 
     yield
     
     # Shutdown
-    await close_db()
-    await redis_client.close()
 
 
 app = FastAPI(
@@ -74,6 +70,8 @@ if settings.CORS_ORIGINS:
         allow_headers=["*"],
     )
 
+
+
 # Include routers
 app.include_router(health.router, tags=["health"])
 app.include_router(
@@ -86,6 +84,13 @@ app.include_router(
     prefix=f"{settings.API_PREFIX}/validate",
     tags=["validate"],
 )
+
+# Mount Static Files
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+@app.get("/")
+async def read_index():
+    return FileResponse("app/static/index.html")
 
 
 @app.get("/metrics", tags=["health"])
@@ -100,15 +105,7 @@ async def metrics():
     )
 
 
-@app.get("/", tags=["health"])
-async def root():
-    """Root endpoint"""
-    return {
-        "service": settings.APP_NAME,
-        "version": settings.APP_VERSION,
-        "pipeline_version": settings.PIPELINE_VERSION,
-        "environment": settings.APP_ENV,
-    }
+
 
 
 @app.exception_handler(404)
