@@ -1,16 +1,4 @@
 {
-  "/docs": [
-    {
-      "id": "features",
-      "title": "Features",
-      "offsetRem": 0
-    },
-    {
-      "id": "next-steps",
-      "title": "Next Steps",
-      "offsetRem": 0
-    }
-  ],
   "/authentication": [
     {
       "id": "using-your-api-key",
@@ -32,6 +20,18 @@
     {
       "id": "error-response-format",
       "title": "Error Response Format",
+      "offsetRem": 0
+    }
+  ],
+  "/docs": [
+    {
+      "id": "features",
+      "title": "Features",
+      "offsetRem": 0
+    },
+    {
+      "id": "next-steps",
+      "title": "Next Steps",
       "offsetRem": 0
     }
   ],

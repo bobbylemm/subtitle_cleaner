@@ -13,6 +13,9 @@
     "env": {
         "production": {
             "name": "subtitlecleaner-production",
+            "vars": {
+                "API_URL": "https://clean-subtitle-tsrxh.ondigitalocean.app"
+            },
             "routes": [
                 {
                     "pattern": "cleansubtitle.com",
