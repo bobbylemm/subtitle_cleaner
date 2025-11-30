@@ -92,14 +92,14 @@ export function Header() {
               <Logo className="h-10 w-auto" />
             </Link>
             <div className="hidden md:flex md:gap-x-6">
-              <NavLink href="#features" className="text-neutral-200">Features</NavLink>
-              <NavLink href="#testimonials" className="text-neutral-200">Testimonials</NavLink>
-              <NavLink href="#pricing" className="text-neutral-200">Pricing</NavLink>
+              <NavLink href="#features" className="text-zinc-900 dark:text-zinc-100">Features</NavLink>
+              <NavLink href="#testimonials" className="text-zinc-900 dark:text-zinc-100">Testimonials</NavLink>
+              <NavLink href="#pricing" className="text-zinc-900 dark:text-zinc-100">Pricing</NavLink>
             </div>
           </div>
           <div className="flex items-center gap-x-5 md:gap-x-8">
             <div className="hidden md:block">
-              <NavLink href="/login" className="text-neutral-200">Sign in</NavLink>
+              <NavLink href="/login" className="text-zinc-900 dark:text-zinc-100">Sign in</NavLink>
             </div>
             <Button href="/register" color="green">
               <span>

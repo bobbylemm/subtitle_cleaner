@@ -44,6 +44,8 @@ function ArrowDownTrayIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
   )
 }
 
+import { diffWords } from 'diff'
+
 export default function CorrectorPage() {
   const [file, setFile] = useState<File | null>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -51,6 +53,8 @@ export default function CorrectorPage() {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const [originalContent, setOriginalContent] = useState<string>('')
 
   // Form State
   const [topic, setTopic] = useState('')
@@ -73,18 +77,28 @@ export default function CorrectorPage() {
     e.preventDefault()
     setIsDragging(false)
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setFile(e.dataTransfer.files[0])
-      setResult(null)
-      setError(null)
+      handleFile(e.dataTransfer.files[0])
     }
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0])
-      setResult(null)
-      setError(null)
+      handleFile(e.target.files[0])
     }
+  }
+
+  const handleFile = (file: File) => {
+    setFile(file)
+    setResult(null)
+    setError(null)
+    
+    // Read file content for diff view
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const text = e.target?.result as string
+      setOriginalContent(text)
+    }
+    reader.readAsText(file)
   }
 
   const handleSubmit = async () => {
@@ -131,6 +145,40 @@ export default function CorrectorPage() {
     URL.revokeObjectURL(url)
   }
 
+  // Diff Logic
+  const renderDiff = (original: string, corrected: string, mode: 'original' | 'corrected') => {
+    const diff = diffWords(original, corrected)
+
+    return diff.map((part, index) => {
+      if (mode === 'original') {
+        if (part.removed) {
+          return (
+            <span key={index} className="bg-red-100 text-red-700 decoration-red-500/50 line-through">
+              {part.value}
+            </span>
+          )
+        }
+        if (!part.added) {
+          return <span key={index}>{part.value}</span>
+        }
+        return null
+      } else {
+        // Corrected Mode
+        if (part.added) {
+          return (
+            <span key={index} className="bg-green-100 text-green-700 font-medium">
+              {part.value}
+            </span>
+          )
+        }
+        if (!part.removed) {
+          return <span key={index}>{part.value}</span>
+        }
+        return null
+      }
+    })
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
       <div className="mx-auto max-w-3xl">
@@ -144,7 +192,7 @@ export default function CorrectorPage() {
         </div>
 
         {/* Main Card */}
-        <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden mb-8">
           <div className="p-8">
             {/* Dropzone */}
             <div
@@ -272,62 +320,58 @@ export default function CorrectorPage() {
             )}
           </div>
         </div>
+      </div>
 
-        {/* Results Section */}
-        {result && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-8"
-          >
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 p-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-                  Correction Complete! ✨
-                </h2>
+      {/* Results Section */}
+      {result && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-8"
+        >
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                Correction Complete! ✨
+              </h2>
+              <div className="flex gap-4">
+                <div className="text-sm text-zinc-500 flex items-center">
+                  <span className="inline-block w-3 h-3 bg-green-100 border border-green-300 rounded mr-2"></span>
+                  <span>Added</span>
+                  <span className="inline-block w-3 h-3 bg-red-100 border border-red-300 rounded ml-4 mr-2"></span>
+                  <span>Removed</span>
+                </div>
                 <Button onClick={downloadFile} variant="outline">
                   <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
                   Download Corrected File
                 </Button>
               </div>
+            </div>
 
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider">
-                  Key Corrections
+            <div className="grid grid-cols-2 gap-6 h-[600px]">
+              {/* Original Column */}
+              <div className="flex flex-col h-full min-h-0 overflow-hidden">
+                <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3 flex-none">
+                  Original
                 </h3>
-                
-                {result.changes && result.changes.length > 0 ? (
-                  <div className="grid gap-3">
-                    {result.changes.map((change: any, idx: number) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800"
-                      >
-                        <div className="flex-1">
-                          <span className="text-red-500 line-through text-sm mr-2">
-                            {change.original}
-                          </span>
-                          <span className="text-zinc-400 text-xs mr-2">➔</span>
-                          <span className="text-emerald-600 dark:text-emerald-400 font-medium text-sm">
-                            {change.corrected}
-                          </span>
-                        </div>
-                        <span className="text-xs text-zinc-400 font-mono">
-                          #{change.id}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-zinc-500 italic">
-                    No major corrections found (or file was already perfect!)
-                  </p>
-                )}
+                <div className="flex-1 min-h-0 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 p-4 font-mono text-sm whitespace-pre-wrap">
+                  {renderDiff(originalContent, result.corrected_content, 'original')}
+                </div>
+              </div>
+
+              {/* Corrected Column */}
+              <div className="flex flex-col h-full min-h-0 overflow-hidden">
+                <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3 flex-none">
+                  Corrected
+                </h3>
+                <div className="flex-1 min-h-0 overflow-y-auto rounded-xl border border-green-200 dark:border-green-900/50 bg-green-50/30 dark:bg-green-900/10 p-4 font-mono text-sm whitespace-pre-wrap">
+                  {renderDiff(originalContent, result.corrected_content, 'corrected')}
+                </div>
               </div>
             </div>
-          </motion.div>
-        )}
-      </div>
+          </div>
+        </motion.div>
+      )}
     </div>
   )
 }

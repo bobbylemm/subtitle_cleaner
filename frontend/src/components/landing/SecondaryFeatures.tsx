@@ -7,8 +7,8 @@ import clsx from 'clsx'
 
 import { Container } from '@/components/landing/Container'
 import screenshotContacts from '@/images/landing/screenshots/contacts.png'
+import screenshotCorrectionDiff from '@/images/landing/screenshots/correction-diff.png'
 import screenshotInventory from '@/images/landing/screenshots/inventory.png'
-import screenshotProfitLoss from '@/images/landing/screenshots/profit-loss.png'
 
 interface Feature {
   name: React.ReactNode
@@ -24,7 +24,7 @@ const features: Array<Feature> = [
     summary: 'See exactly what changed with a clear before/after comparison.',
     description:
       'Review every single correction. We highlight the changes so you can trust the output.',
-    image: screenshotProfitLoss,
+    image: screenshotCorrectionDiff,
     icon: function ReportingIcon() {
       let id = useId()
       return (

@@ -13,7 +13,7 @@ import logoTuple from '@/images/landing/logos/tuple.svg'
 export function Hero() {
   return (
     <Container className="pt-20 pb-16 text-center lg:pt-32">
-      <h1 className="mx-auto max-w-4xl font-display text-5xl font-medium tracking-tight text-white sm:text-7xl">
+      <h1 className="mx-auto max-w-4xl font-display text-5xl font-medium tracking-tight text-zinc-900 dark:text-white sm:text-7xl">
         Perfect Subtitles{' '}
         <span className="relative whitespace-nowrap text-green-600">
           <svg
@@ -28,7 +28,7 @@ export function Hero() {
         </span>{' '}
         for everyone.
       </h1>
-      <p className="mx-auto mt-6 max-w-2xl text-lg tracking-tight text-neutral-400">
+      <p className="mx-auto mt-6 max-w-2xl text-lg tracking-tight text-zinc-600 dark:text-neutral-400">
         AI-powered correction that preserves slang, style, and context. Stop wasting hours manually fixing subtitles.
       </p>
       <div className="mt-10 flex justify-center gap-x-6">
