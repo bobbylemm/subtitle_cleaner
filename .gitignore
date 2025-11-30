@@ -8,6 +8,9 @@ wheels/
 
 # Frontend
 frontend/node_modules
+frontend/.next
+frontend/.open-next
+frontend/.wrangler
 
 # Virtual environments
 .venv

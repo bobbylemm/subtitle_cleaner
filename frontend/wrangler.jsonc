@@ -1,0 +1,28 @@
+{
+    "$schema": "./node_modules/wrangler/config-schema.json",
+    "main": ".open-next/worker.js",
+    "name": "subtitlecleaner",
+    "compatibility_date": "2025-03-25",
+    "compatibility_flags": [
+        "nodejs_compat"
+    ],
+    "assets": {
+        "directory": ".open-next/assets",
+        "binding": "ASSETS"
+    },
+    "env": {
+        "production": {
+            "name": "subtitlecleaner-production",
+            "routes": [
+                {
+                    "pattern": "cleansubtitle.com",
+                    "custom_domain": true
+                },
+                {
+                    "pattern": "www.cleansubtitle.com",
+                    "custom_domain": true
+                }
+            ]
+        }
+    }
+}

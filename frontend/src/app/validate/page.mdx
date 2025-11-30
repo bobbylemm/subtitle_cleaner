@@ -1,0 +1,47 @@
+export const metadata = {
+  title: 'Validation',
+  description: 'Validate subtitle files for structural errors.',
+}
+
+# Validation
+
+The Validation endpoint allows you to check subtitle files for common structural errors before processing them. This is useful for ensuring file integrity.
+
+## Check Subtitles
+
+This endpoint parses the file and reports any syntax errors, overlapping timestamps, or encoding issues.
+
+```bash {{ title: 'Example Request' }}
+curl -X POST https://subtitlecleaner.chidozienwoga.workers.dev/api/v1/validate \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -F "file=@movie.srt"
+```
+
+## Attributes
+
+<Col>
+  <Properties>
+    <Property name="file" type="file" required>
+      The subtitle file to validate. Supported formats: `.srt`, `.vtt`.
+    </Property>
+  </Properties>
+</Col>
+
+<Col sticky>
+  <CodeGroup title="Response" tag="POST" label="/api/v1/validate">
+    ```json {{ title: 'Response' }}
+    {
+      "filename": "movie.srt",
+      "is_valid": true,
+      "errors": [],
+      "warnings": [
+        "Line 42: Timestamp overlap detected"
+      ],
+      "stats": {
+        "segment_count": 1200,
+        "duration_seconds": 3600
+      }
+    }
+    ```
+  </CodeGroup>
+</Col>

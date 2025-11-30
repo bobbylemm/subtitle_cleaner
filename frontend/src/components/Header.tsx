@@ -81,8 +81,7 @@ export const Header = forwardRef<
       <div className="flex items-center gap-5">
         <nav className="hidden md:block">
           <ul role="list" className="flex items-center gap-8">
-            <TopLevelNavItem href="/">API Docs</TopLevelNavItem>
-            <TopLevelNavItem href="/corrector">Corrector Tool</TopLevelNavItem>
+            <TopLevelNavItem href="/docs">API Docs</TopLevelNavItem>
             <TopLevelNavItem href="#">Support</TopLevelNavItem>
           </ul>
         </nav>

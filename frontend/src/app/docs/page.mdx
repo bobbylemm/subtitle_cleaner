@@ -1,0 +1,34 @@
+import { Guides } from '@/components/Guides'
+import { HeroPattern } from '@/components/HeroPattern'
+
+export const metadata = {
+  title: 'Getting Started',
+  description:
+    'Learn how to use the Clean Subtitle API to clean and correct subtitles programmatically.',
+}
+
+export const sections = [
+  { title: 'Features', id: 'features' },
+  { title: 'Guides', id: 'guides' },
+]
+
+<HeroPattern />
+
+# Getting Started
+
+The **Clean Subtitle API** allows you to programmatically clean, correct, and standardize subtitle files (SRT, VTT) using advanced LLM-powered context analysis.
+
+It goes beyond simple spell-checking by understanding the **context** of the video (Topic, Industry, Country) to preserve slang, nicknames, and technical terms while fixing genuine errors.
+
+## Features
+
+-   **Context-Aware Correction:** Uses GPT-4o to analyze the full text and understand the domain before making changes.
+-   **Style Preservation:** Keeps the speaker's authentic voice, including slang and informal language.
+-   **Multi-Format Support:** Works with `.srt` and `.vtt` files.
+-   **Diff Generation:** Returns a detailed list of changes for transparency.
+
+## Next Steps
+
+To start using the API, you'll need an API key. See the [Authentication](/authentication) guide for details.
+
+<Guides />

@@ -1,4 +1,3 @@
-import glob from 'fast-glob'
 import { type Metadata } from 'next'
 
 import { Providers } from '@/app/providers'
@@ -6,6 +5,7 @@ import { Layout } from '@/components/Layout'
 import { type Section } from '@/components/SectionProvider'
 
 import '@/styles/tailwind.css'
+import allSections from '@/generated/sections.json'
 
 export const metadata: Metadata = {
   title: {
@@ -14,19 +14,11 @@ export const metadata: Metadata = {
   },
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  let pages = await glob('**/*.mdx', { cwd: 'src/app' })
-  let allSectionsEntries = (await Promise.all(
-    pages.map(async (filename) => [
-      '/' + filename.replace(/(^|\/)page\.mdx$/, ''),
-      (await import(`./${filename}`)).sections,
-    ]),
-  )) as Array<[string, Array<Section>]>
-  let allSections = Object.fromEntries(allSectionsEntries)
 
   return (
     <html lang="en" className="h-full" suppressHydrationWarning>

@@ -30,7 +30,9 @@ class ContextManifest(BaseModel):
     
     def to_prompt_context(self) -> str:
         """Convert manifest to a concise prompt string."""
-        entities_str = "\n".join([f"- {e.name} ({e.type}): {e.description or ''} (Watch out for: {', '.join(e.common_misspellings)})" for e in self.entities])
+        # Sort entities to ensure deterministic prompt for caching
+        sorted_entities = sorted(self.entities, key=lambda e: e.name)
+        entities_str = "\n".join([f"- {e.name} ({e.type}): {e.description or ''} (Watch out for: {', '.join(e.common_misspellings)})" for e in sorted_entities])
         return f"""
 TOPIC: {self.topic}
 GENRE: {self.genre}
@@ -41,6 +43,18 @@ KEY ENTITIES:
 {entities_str}
 """
 
+class Correction(BaseModel):
+    segment_id: int
+    original_text: str
+    corrected_text: str
+    type: str = Field(..., description="entity, context, grammar, hallucination")
+    reason: str
+
+class CorrectionResult(BaseModel):
+    content: str
+    manifest: ContextManifest
+    changes: List[Dict[str, Any]]
+
 class UniversalCorrectionService:
     def __init__(self, api_key: Optional[str] = None, kb_path: str = "knowledge_base.db"):
         self.api_key = api_key or settings.OPENAI_API_KEY
@@ -50,7 +64,7 @@ class UniversalCorrectionService:
         else:
             self.client = AsyncOpenAI(api_key=self.api_key)
             
-        self.model = settings.OPENAI_MODEL or "gpt-3.5-turbo"
+        self.model = settings.OPENAI_MODEL or "gpt-4o"
         self.kb = KnowledgeBaseService(kb_path)
 
     async def analyze_context(self, document: SubtitleDocument) -> ContextManifest:
@@ -141,7 +155,7 @@ Output JSON:
 
     async def correct_chunk(self, segments: List[Segment], manifest: ContextManifest) -> List[Segment]:
         """
-        Stage 2: Correct a chunk of segments using the manifest.
+        Stage 2: Correct a chunk of segments using a Deterministic Diff-Based approach.
         """
         if not segments:
             return []
@@ -154,28 +168,10 @@ Output JSON:
         for s in segments:
             input_text += f"[{s.idx}] {s.text}\n"
 
-        # Inject KB corrections into the prompt context
-        # Use weighted retrieval based on manifest context
-        context_dict = {
-            "topic": manifest.topic,
-            "industry": manifest.industry,
-            "country": manifest.country
-        }
-        
-        # We want to find relevant corrections for words in this chunk.
-        # Querying the DB for *every* word is too slow.
-        # Strategy: Query for known entities in the manifest + common words if we had a cache.
-        # For now, let's fetch ALL corrections for this context (filtered by topic/country) to put in prompt.
-        # Since we don't have a "get_all_for_context" yet, let's just get all and filter in python or trust the prompt.
-        # Actually, let's just pass the most relevant ones.
-        
+        # Fetch relevant KB entries
         all_kb = self.kb.get_all_corrections()
-        # Filter manually for relevance to this chunk? No, that's hard.
-        # Let's just dump the high-confidence ones that match the context.
-        
         relevant_kb = []
         for entry in all_kb:
-            # Simple relevance check
             score = 0
             if entry.country.lower() == manifest.country.lower(): score += 2
             if entry.topic.lower() == manifest.topic.lower(): score += 1
@@ -184,16 +180,15 @@ Output JSON:
             
             if score > 0:
                 relevant_kb.append(entry)
-                
-        # Sort by relevance
-        # relevant_kb.sort(key=lambda x: x.confidence, reverse=True) # We don't have score here easily
         
-        kb_context = "\n".join([f"- {c.wrong_term} -> {c.correct_term}" for c in relevant_kb[:50]]) # Limit to 50
+        # Sort KB entries to ensure deterministic prompt for caching
+        relevant_kb.sort(key=lambda x: x.wrong_term)
+        
+        kb_context = "\n".join([f"- {c.wrong_term} -> {c.correct_term}" for c in relevant_kb[:50]])
         
         system_prompt = f"""
 You are a World-Class Subtitle Corrector.
-Your Goal: Fix phonetic errors and transcription mistakes while PRESERVING the speaker's authentic voice.
-Accuracy Target: 99%.
+Your Goal: Identify errors in the subtitles and provide specific corrections.
 
 CONTEXT MANIFEST:
 {manifest.to_prompt_context()}
@@ -201,18 +196,33 @@ CONTEXT MANIFEST:
 KNOWLEDGE BASE (PRIORITY FIXES):
 {kb_context}
 
+INSTRUCTIONS:
+1. Analyze the text for errors.
+2. Do NOT rewrite the text. Only list specific corrections.
+3. Return a JSON object with a "corrections" list.
+
+ERROR CLASSES:
+- "entity": Names, Places, Terms (e.g., "Mecano" -> "Upamecano").
+- "context": Homophones, Wrong Word (e.g., "contrast" -> "contract"). MUST include surrounding words in 'original_text' to be unique (e.g. "the contrast was").
+- "grammar": Punctuation, Casing (e.g., "lets" -> "Let's").
+- "hallucination": Text that shouldn't be there (e.g., "Thank you for watching").
+
 RULES:
-1. USE THE KNOWLEDGE BASE & GLOSSARY: Priority 1.
-2. PRESERVE SLANG/NICKNAMES: Do NOT correct "Wizzy" to "Whizzy" or "Gbedu" to "Bed" if the context supports it.
-3. FIX OBVIOUS TYPOS: "teh" -> "the", "wanna" -> "want to" (ONLY if formal).
-4. CONSISTENCY: Use "Man United" (not "Manchester United" unless spoken). Use "Frenkie de Jong" (not "Frankie" or "The Young"). Use "Xavi" (not "Chavi" or "Xvi").
-5. DO NOT HALLUCINATE: If unsure, keep the original text.
-6. OUTPUT JSON: List of corrections.
+1. "original_text" MUST MATCH the source text EXACTLY. If it doesn't match, the correction will be rejected.
+2. For "context" errors, include 1-2 surrounding words in "original_text" to ensure uniqueness.
+3. PRESERVE SLANG: Do not correct "Wizzy" or "Gbedu" if the style guide allows it.
+4. "segment_id" must match the ID in the input.
 
 Example Output:
 {{
   "corrections": [
-    {{"idx": 1, "text": "Corrected text line 1"}}
+    {{
+      "segment_id": 12,
+      "original_text": "the contrast was",
+      "corrected_text": "the contract was",
+      "type": "context",
+      "reason": "Homophone error"
+    }}
   ]
 }}
 """
@@ -222,7 +232,7 @@ Example Output:
                 model=self.model,
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"Correct these subtitles:\n\n{input_text}"}
+                    {"role": "user", "content": f"Find errors in these subtitles:\n\n{input_text}"}
                 ],
                 temperature=0.0,
                 response_format={"type": "json_object"}
@@ -230,12 +240,42 @@ Example Output:
             
             content = response.choices[0].message.content
             data = json.loads(content)
-            corrections = {c['idx']: c['text'] for c in data.get('corrections', [])}
             
-            # Apply corrections
+            # Parse corrections
+            corrections_data = data.get('corrections', [])
+            corrections = []
+            for c in corrections_data:
+                try:
+                    corrections.append(Correction(**c))
+                except Exception as e:
+                    logger.warning(f"Skipping invalid correction format: {c} - {e}")
+
+            # Apply corrections deterministically
             corrected_segments = []
+            segment_map = {s.idx: s for s in segments}
+            
+            # Group corrections by segment
+            corrections_by_seg = {}
+            for c in corrections:
+                if c.segment_id not in corrections_by_seg:
+                    corrections_by_seg[c.segment_id] = []
+                corrections_by_seg[c.segment_id].append(c)
+            
             for s in segments:
-                new_text = corrections.get(s.idx, s.text) # Fallback to original if no correction returned
+                new_text = s.text
+                if s.idx in corrections_by_seg:
+                    # Sort by length of original_text descending to avoid partial replacement issues
+                    seg_corrections = sorted(corrections_by_seg[s.idx], key=lambda x: len(x.original_text), reverse=True)
+                    
+                    for correction in seg_corrections:
+                        # STRICT VALIDATION: Text must exist
+                        if correction.original_text in new_text:
+                            # Safe replace
+                            new_text = new_text.replace(correction.original_text, correction.corrected_text)
+                            logger.info(f"Applied {correction.type} fix: '{correction.original_text}' -> '{correction.corrected_text}'")
+                        else:
+                            logger.warning(f"Rejected {correction.type} fix: '{correction.original_text}' not found in segment {s.idx}")
+                
                 corrected_segments.append(Segment(
                     idx=s.idx,
                     start_ms=s.start_ms,
@@ -249,21 +289,20 @@ Example Output:
             logger.error(f"Chunk Correction Failed: {e}")
             return segments # Fallback to original
 
-    async def process_full_document(self, content: str, format: SubtitleFormat = SubtitleFormat.SRT) -> str:
+    async def process_full_document(self, content: str, format: SubtitleFormat = SubtitleFormat.SRT) -> CorrectionResult:
         """
-        Orchestrate the full correction process.
+        Orchestrate the full correction process and return rich results.
         """
         # 1. Parse
         doc = SubtitleParser.parse(content, format)
         if not doc.segments:
-            return content
+            return CorrectionResult(content=content, manifest=ContextManifest(topic="Unknown", genre="Unknown", summary="Empty", entities=[], style_guide=""), changes=[])
 
         # 2. Analyze Context (The "Brain")
         manifest = await self.analyze_context(doc)
         
         # 3. Chunk and Correct (The "Editor")
-        # Chunk size of 20-30 segments is usually good for LLM context window vs latency
-        CHUNK_SIZE = 25
+        CHUNK_SIZE = 30
         corrected_segments = []
         
         for i in range(0, len(doc.segments), CHUNK_SIZE):
@@ -274,21 +313,36 @@ Example Output:
         # 4. Global Consistency Pass (The "Polisher")
         corrected_segments = self._apply_global_consistency(corrected_segments, manifest)
 
-        # 5. Reconstruct (Simple serialization)
+        # Calculate Diffs for UI
+        changes = []
+        orig_map = {s.idx: s.text for s in doc.segments}
+        for s in corrected_segments:
+            original = orig_map.get(s.idx, "")
+            if original != s.text:
+                changes.append({
+                    "id": s.idx,
+                    "original": original,
+                    "corrected": s.text
+                })
+
+        # 5. Reconstruct
         output = []
         for s in corrected_segments:
             start = self._format_time(s.start_ms)
             end = self._format_time(s.end_ms)
             output.append(f"{s.idx}\n{start} --> {end}\n{s.text}\n")
             
-        return "\n".join(output)
+        return CorrectionResult(
+            content="\n".join(output),
+            manifest=manifest,
+            changes=changes
+        )
 
     def _apply_global_consistency(self, segments: List[Segment], manifest: ContextManifest) -> List[Segment]:
         """
         Enforce global consistency for key entities.
         """
         # Start with hardcoded replacements
-        # In a real system, this would be more sophisticated (regex, token matching)
         replacements = {
             "Bentancour": "Bentancur",
             "Bentancurt": "Bentancur",
@@ -309,8 +363,7 @@ Example Output:
             for misspelling in entity.common_misspellings:
                 replacements[misspelling] = entity.name
                 
-        # Add entities from Knowledge Base (The most important part!)
-        # We fetch ALL corrections because this is a cheap string replacement pass
+        # Add entities from Knowledge Base
         all_kb = self.kb.get_all_corrections()
         for entry in all_kb:
             replacements[entry.wrong_term] = entry.correct_term
@@ -319,15 +372,14 @@ Example Output:
         for s in segments:
             text = s.text
             for wrong, right in replacements.items():
-                # Case-insensitive replacement could be better, but let's stick to exact for now to avoid accidents
-                if wrong in text:
-                    text = text.replace(wrong, right)
-                # Also try case-insensitive for specific known bads
-                if wrong.lower() in text.lower() and wrong.lower() not in ["may", "man"]: # Avoid common words
-                     # This is a bit hacky, better to use regex with word boundaries
-                     import re
-                     pattern = re.compile(re.escape(wrong), re.IGNORECASE)
-                     text = pattern.sub(right, text)
+                # Use regex with word boundaries to avoid partial matches (e.g. "in" inside "win")
+                import re
+                try:
+                    pattern = re.compile(r'\b' + re.escape(wrong) + r'\b', re.IGNORECASE)
+                    text = pattern.sub(right, text)
+                except Exception:
+                    if wrong in text:
+                        text = text.replace(wrong, right)
 
             final_segments.append(Segment(
                 idx=s.idx,

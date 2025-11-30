@@ -1,0 +1,67 @@
+export const metadata = {
+  title: 'Clean Subtitle',
+  description: 'Correct subtitle files using advanced context analysis.',
+}
+
+# Clean Subtitle
+
+The Clean Subtitle endpoint is the core of the API. It accepts a subtitle file and optional context parameters, analyzes the content using LLMs, and returns a corrected version along with a list of changes.
+
+## The Correction Model
+
+This endpoint uses a two-stage process:
+1.  **Analysis:** It samples the subtitle file to understand the topic, speakers, and tone.
+2.  **Correction:** It processes the file in chunks, applying corrections while maintaining global consistency.
+
+```bash {{ title: 'Example Request' }}
+curl -X POST https://subtitlecleaner.chidozienwoga.workers.dev/api/v1/universal/universal-correct \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -F "file=@episode1.srt" \
+  -F "topic=Football" \
+  -F "industry=Sports" \
+  -F "country=UK"
+```
+
+## Attributes
+
+<Col>
+  <Properties>
+    <Property name="file" type="file" required>
+      The subtitle file to correct. Supported formats: `.srt`, `.vtt`.
+    </Property>
+    <Property name="topic" type="string">
+      The main topic of the video (e.g., "Football", "Coding", "Cooking"). Helps the AI identify jargon.
+    </Property>
+    <Property name="industry" type="string">
+      The industry context (e.g., "Sports", "Technology").
+    </Property>
+    <Property name="country" type="string">
+      The country or region of the speakers (e.g., "UK", "USA"). Helps with slang and spelling (Color vs Colour).
+    </Property>
+  </Properties>
+</Col>
+
+<Col sticky>
+  <CodeGroup title="Response" tag="POST" label="/api/v1/universal/universal-correct">
+    ```json {{ title: 'Response' }}
+    {
+      "filename": "episode1.srt",
+      "original_content": "...",
+      "corrected_content": "...",
+      "changes": [
+        {
+          "id": 1,
+          "original": "Mecano",
+          "corrected": "Upamecano",
+          "reason": "Corrected player name based on context",
+          "category": "entity"
+        }
+      ],
+      "stats": {
+        "total_segments": 500,
+        "corrected_segments": 12
+      }
+    }
+    ```
+  </CodeGroup>
+</Col>

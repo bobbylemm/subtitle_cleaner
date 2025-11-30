@@ -1,0 +1,37 @@
+export const metadata = {
+  title: 'Health Check',
+  description: 'Check the status of the API.',
+}
+
+# Health Check
+
+The Health Check endpoint allows you to verify that the API is running and responsive.
+
+## Get Status
+
+Returns the current status of the service.
+
+```bash {{ title: 'Example Request' }}
+curl https://subtitlecleaner.chidozienwoga.workers.dev/api/v1/health
+```
+
+## Attributes
+
+<Col>
+  <Properties>
+    <Property name="None">
+      This endpoint accepts no parameters.
+    </Property>
+  </Properties>
+</Col>
+
+<Col sticky>
+  <CodeGroup title="Response" tag="GET" label="/api/v1/health">
+    ```json {{ title: 'Response' }}
+    {
+      "status": "ok",
+      "version": "1.0.0"
+    }
+    ```
+  </CodeGroup>
+</Col>
