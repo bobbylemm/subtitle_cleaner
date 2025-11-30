@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { forwardRef } from 'react'
 
 import { Button } from '@/components/Button'
@@ -44,15 +45,21 @@ export const Header = forwardRef<
   let bgOpacityLight = useTransform(scrollY, [0, 72], ['50%', '90%'])
   let bgOpacityDark = useTransform(scrollY, [0, 72], ['20%', '80%'])
 
+  let pathname = usePathname()
+  let isAppPage = pathname === '/app'
+
   return (
     <motion.div
       {...props}
       ref={ref}
       className={clsx(
         className,
-        'fixed inset-x-0 top-0 z-50 flex h-14 items-center justify-between gap-12 px-4 transition sm:px-6 lg:left-72 lg:z-30 lg:px-8 xl:left-80',
+        'fixed inset-x-0 top-0 z-50 flex h-14 items-center justify-between gap-12 px-4 transition sm:px-6 lg:z-30 lg:px-8',
+        'pointer-events-auto',
+        !isAppPage && 'lg:left-72 xl:left-80',
         !isInsideMobileNavigation &&
-          'backdrop-blur-xs lg:left-72 xl:left-80 dark:backdrop-blur-sm',
+          'backdrop-blur-xs dark:backdrop-blur-sm',
+        !isInsideMobileNavigation && !isAppPage && 'lg:left-72 xl:left-80',
         isInsideMobileNavigation
           ? 'bg-white dark:bg-zinc-900'
           : 'bg-white/(--bg-opacity-light) dark:bg-zinc-900/(--bg-opacity-dark)',
@@ -71,13 +78,20 @@ export const Header = forwardRef<
             'bg-zinc-900/7.5 dark:bg-white/7.5',
         )}
       />
-      <Search />
+      {!isAppPage && <Search />}
       <div className="flex items-center gap-5 lg:hidden">
         <MobileNavigation />
         <CloseButton as={Link} href="/" aria-label="Home">
           <Logo className="h-6" />
         </CloseButton>
       </div>
+      {isAppPage && (
+        <div className="hidden lg:flex items-center mr-4">
+             <Link href="/" aria-label="Home">
+                <Logo className="h-6" />
+              </Link>
+        </div>
+      )}
       <div className="flex items-center gap-5">
         <nav className="hidden md:block">
           <ul role="list" className="flex items-center gap-8">
@@ -87,7 +101,7 @@ export const Header = forwardRef<
         </nav>
         <div className="hidden md:block md:h-5 md:w-px md:bg-zinc-900/10 md:dark:bg-white/15" />
         <div className="flex gap-4">
-          <MobileSearch />
+          {!isAppPage && <MobileSearch />}
           <ThemeToggle />
         </div>
         <div className="hidden min-[416px]:contents">
