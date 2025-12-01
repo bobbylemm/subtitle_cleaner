@@ -115,7 +115,9 @@ export default function CorrectorPage() {
 
     try {
       // Bypass Next.js proxy to avoid timeouts on large files
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const isProd = process.env.NODE_ENV === 'production';
+      const defaultUrl = isProd ? 'https://clean-subtitle-tsrxh.ondigitalocean.app' : 'http://localhost:8000';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || defaultUrl;
       const response = await fetch(`${apiUrl}/v1/universal/universal-correct`, {
         method: 'POST',
         body: formData,

@@ -1,4 +1,12 @@
 {
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/authentication/page": "app/authentication/page.js",
   "/app/page": "app/app/page.js",
-  "/page": "app/page.js"
+  "/errors/page": "app/errors/page.js",
+  "/docs/page": "app/docs/page.js",
+  "/health/page": "app/health/page.js",
+  "/page": "app/page.js",
+  "/universal/page": "app/universal/page.js",
+  "/validate/page": "app/validate/page.js"
 }
