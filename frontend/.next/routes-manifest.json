@@ -85,6 +85,12 @@
       "namedRegex": "^/health(?:/)?$"
     },
     {
+      "page": "/sitemap.xml",
+      "regex": "^/sitemap\\.xml(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/sitemap\\.xml(?:/)?$"
+    },
+    {
       "page": "/universal",
       "regex": "^/universal(?:/)?$",
       "routeKeys": {},

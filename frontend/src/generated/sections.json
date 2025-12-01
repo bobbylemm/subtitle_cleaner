@@ -23,18 +23,6 @@
       "offsetRem": 0
     }
   ],
-  "/errors": [
-    {
-      "id": "status-codes",
-      "title": "Status Codes",
-      "offsetRem": 0
-    },
-    {
-      "id": "error-response-format",
-      "title": "Error Response Format",
-      "offsetRem": 0
-    }
-  ],
   "/health": [
     {
       "id": "get-status",
@@ -44,6 +32,18 @@
     {
       "id": "attributes",
       "title": "Attributes",
+      "offsetRem": 0
+    }
+  ],
+  "/errors": [
+    {
+      "id": "status-codes",
+      "title": "Status Codes",
+      "offsetRem": 0
+    },
+    {
+      "id": "error-response-format",
+      "title": "Error Response Format",
       "offsetRem": 0
     }
   ],

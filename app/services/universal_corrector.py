@@ -61,6 +61,7 @@ class CorrectionResult(BaseModel):
     content: str
     manifest: ContextManifest
     changes: List[Dict[str, Any]]
+    applied_corrections: List[Correction] = []
 
 class UniversalCorrectionService:
     def __init__(self, api_key: Optional[str] = None, kb_path: str = "knowledge_base.db"):
@@ -76,66 +77,48 @@ class UniversalCorrectionService:
 
     async def analyze_context(self, document: SubtitleDocument) -> ContextManifest:
         """
-        Stage 1: Analyze the full document to understand context and build a glossary.
+        Stage 1: Analyze the document to understand context, entities, and style.
         """
         if not self.client:
-            logger.error("No OpenAI Client available")
-            return ContextManifest(
-                topic="General",
-                genre="Unknown",
-                industry="General",
-                country="General",
-                summary="Analysis failed - No API Key",
-                entities=[],
-                style_guide="Correct standard English errors. Preserve intent."
-            )
+            return ContextManifest(topic="General", genre="General", summary="No API Key", entities=[], style_guide="Standard")
 
-        # Extract a representative sample (first 100 lines + middle 100 + last 100)
-        # or just the full text if it's small enough. For now, let's grab a large chunk.
-        full_text = "\n".join([s.text for s in document.segments])
-        
-        # Truncate to avoid token limits if necessary (approx 10k chars for analysis)
-        sample_text = full_text[:5000] + "\n...\n" + full_text[-5000:] if len(full_text) > 10000 else full_text
+        # Extract a representative sample (first 50 lines + middle 50 lines)
+        sample_text = ""
+        lines = [s.text for s in document.segments]
+        if len(lines) > 100:
+            sample_text = "\n".join(lines[:50] + ["..."] + lines[len(lines)//2 : len(lines)//2 + 50])
+        else:
+            sample_text = "\n".join(lines)
 
         system_prompt = """
-You are a Universal Subtitle Context Analyzer. 
-Your goal is to read the raw subtitles and extract a "Context Manifest" to help a corrector fix errors.
+You are an expert Subtitle Context Analyzer.
+Your Goal: Analyze the subtitle text to extract metadata that will guide the correction process.
 
-1. DETECT TOPIC, GENRE, INDUSTRY, COUNTRY:
-   - Topic: Sports, Music, Politics?
-   - Industry: Entertainment, Tech, Finance?
-   - Country: Where is this taking place? (e.g., "Nigeria", "Germany", "USA"). Crucial for slang/entities.
+OUTPUT FORMAT (JSON):
+{
+  "topic": "Specific topic (e.g., Football, Tech, Politics)",
+  "genre": "Content genre (e.g., Commentary, Tutorial, Movie)",
+  "summary": "Brief 1-sentence summary of the content",
+  "entities": [
+    {
+      "name": "Correct Entity Name",
+      "category": "Person/Place/Org/Term",
+      "common_misspellings": ["list", "of", "potential", "typos"]
+    }
+  ],
+  "style_guide": "Brief style instructions (e.g., 'Use US English', 'Preserve slang', 'Strict formal tone')."
+}
 
-2. DETECT DIALECT & PRESERVATION LIST (CRITICAL):
-   - Identify the dominant dialect (e.g., "Standard English", "Nigerian Pidgin", "AAVE", "Singlish").
-   - EXTRACT A "PRESERVATION LIST": A list of specific slang words, interjections, or cultural terms that look like typos but are valid in this dialect.
-   - Example for Nigerian Pidgin: ["abeg", "wetin", "na", "sabi", "wahala", "dey", "sef"].
-   - Example for AAVE: ["finna", "tryna", "ion"].
-
-3. EXTRACT ENTITIES & SLANG:
-   - List Names, Places, and specialized Terms.
-   - IDENTIFY PHONETIC ERRORS (e.g., "Mecano" -> "Upamecano").
-   - DO NOT list valid abbreviations (e.g., "Man City", "Utd") as misspellings unless the style guide strictly forbids them.
-
+INSTRUCTIONS:
+1. IDENTIFY ENTITIES: Look for names of people, places, organizations, and technical terms.
+2. PREDICT MISSPELLINGS: For each entity, guess how a phonetic speech-to-text system might mishear it (e.g., "Mbappe" -> "Mboppe", "Haaland" -> "Holland").
+3. DETECT DIALECT/SLANG: If the speaker uses dialect (e.g., "gonna", "wanna", "innit", Nigerian Pidgin), NOTE THIS in the `style_guide` and `dialect` field.
 4. DEFINE STYLE GUIDE & NAMING CONVENTIONS:
    - "Strict" (Formal news) vs "Loose" (Casual/Slang).
    - NAMING CONVENTIONS: Does the speaker use full names ("Manchester City") or abbreviations ("Man City")?
    - Explicitly state: "Preserve full names" or "Allow abbreviations" based on the text.
-
-Output JSON:
-{
-  "topic": "Football",
-  "genre": "Analysis",
-  "industry": "Sports",
-  "country": "Germany",
-  "dialect": "Standard English",
-  "summary": "...",
-  "entities": [
-    {"name": "Upamecano", "type": "Person", "description": "Bayern Player", "common_misspellings": ["Mecano", "Upamaguire"]}
-  ],
-  "preservation_list": [],
-  "style_guide": "Formal tone. Speaker uses full club names (e.g., 'Manchester City'). Do NOT shorten proper nouns."
-}
+   - If the text uses "Man City", "Utd", etc., DO NOT mark them as misspellings.
+5. DO NOT list valid abbreviations (e.g., "Man City", "Utd") as misspellings unless the style guide strictly forbids them.
 """
         
         try:
@@ -143,7 +126,7 @@ Output JSON:
                 model=self.model,
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"Analyze these subtitles:\n\n{sample_text}"}
+                    {"role": "user", "content": f"Analyze this subtitle sample:\n\n{sample_text}"}
                 ],
                 temperature=0.1,
                 response_format={"type": "json_object"}
@@ -152,10 +135,7 @@ Output JSON:
             content = response.choices[0].message.content
             data = json.loads(content)
             manifest = ContextManifest(**data)
-            logger.info(f"Context Analysis Complete: {manifest.topic} ({len(manifest.entities)} entities)")
-            for e in manifest.entities:
-                logger.info(f"Entity: {e.name}, Misspellings: {e.common_misspellings}")
-
+            
             return manifest
             
         except Exception as e:
@@ -277,6 +257,7 @@ Example Output:
 
             # Apply corrections deterministically
             corrected_segments = []
+            applied_corrections = []
             segment_map = {s.idx: s for s in segments}
             
             # Group corrections by segment
@@ -295,8 +276,13 @@ Example Output:
                     for correction in seg_corrections:
                         # STRICT VALIDATION: Text must exist
                         if correction.original_text in new_text:
-                            # Safe replace
+                            # Safety check: Don't correct if it's already correct (hallucination check)
+                            if correction.original_text == correction.corrected_text:
+                                continue
+                                
+                            # Apply replacement
                             new_text = new_text.replace(correction.original_text, correction.corrected_text)
+                            applied_corrections.append(correction)
                             logger.info(f"Applied {correction.type} fix: '{correction.original_text}' -> '{correction.corrected_text}'")
                         else:
                             # FALLBACK: Check for split segment error
@@ -338,11 +324,15 @@ Example Output:
                                                 next_seg_stripped = next_seg.text.lstrip()
                                                 next_seg.text = next_seg_stripped[len(remainder):].strip()
                                                 
+                                                # Add to applied corrections (mark as split)
+                                                correction.reason += " (Split Segment Fix)"
+                                                applied_corrections.append(correction)
+                                                
                                                 logger.info(f"Applied SPLIT fix: '{correction.original_text}' -> '{correction.corrected_text}' (Merged to Seg {s.idx})")
                                                 break
                                     else:
-                                         logger.warning(f"Rejected {correction.type} fix: '{correction.original_text}' not found in segment {s.idx} (Split detection failed)")
-                                         logger.info(f"Failed to find split point. Seg 1 end: '{new_text[-20:]}', Seg 2 start: '{next_seg.text[:20]}'")
+                                        logger.warning(f"Rejected {correction.type} fix: '{correction.original_text}' not found in segment {s.idx} (Split detection failed)")
+                                        logger.info(f"Failed to find split point. Seg 1 end: '{new_text[-20:]}', Seg 2 start: '{next_seg.text[:20]}'")
                                 else:
                                     logger.warning(f"Rejected {correction.type} fix: '{correction.original_text}' not found in segment {s.idx}")
                                     logger.info(f"Combined check failed. Seg {s.idx} text: '{new_text}'")
@@ -356,42 +346,37 @@ Example Output:
                                 logger.info(f"Combined Norm: '{combined_text_norm}'")
                                 
                                 if original_norm in combined_text_norm:
-                                     logger.warning(f"Detected BACKWARD split segment error for '{correction.original_text}'.")
-                                     # We can't easily fix prev_seg here because we might have already processed it or it's not in our write scope easily?
-                                     # Actually, we are modifying `segments` list objects in place via `segment_map`.
-                                     # So we CAN modify `prev_seg.text`.
-                                     
-                                     # Logic similar to forward, but reversed.
-                                     # original_text spans Prev + Current.
-                                     # We want to find the prefix of Current that matches the suffix of original_text.
-                                     
-                                     for i in range(len(correction.original_text)):
-                                         suffix = correction.original_text[i:]
-                                         prefix = correction.original_text[:i]
-                                         
-                                         if suffix.strip() and new_text.lstrip().startswith(suffix.strip()):
-                                             if prev_seg.text.rstrip().endswith(prefix.strip()):
-                                                 # Found it!
-                                                 # Apply fix to PREV segment (merge there?) or Current?
-                                                 # Let's put the fix in Prev segment.
-                                                 
-                                                 match_len = len(prefix.strip())
-                                                 stripped_prev = prev_seg.text.rstrip()
-                                                 prev_prefix = stripped_prev[:-match_len]
-                                                 
-                                                 prev_seg.text = prev_prefix + correction.corrected_text
-                                                 
-                                                 # Remove from Current
-                                                 suffix_len = len(suffix.strip())
-                                                 stripped_curr = new_text.lstrip()
-                                                 new_text = stripped_curr[suffix_len:].strip()
-                                                 
-                                                 logger.info(f"Applied BACKWARD SPLIT fix: '{correction.original_text}' -> '{correction.corrected_text}' (Merged to Seg {s.idx-1})")
-                                                 break
-                                     else:
-                                         logger.warning(f"Rejected {correction.type} fix: '{correction.original_text}' (Backward split detection failed)")
+                                    logger.warning(f"Detected BACKWARD split segment error for '{correction.original_text}'.")
+                                    
+                                    # Logic similar to forward, but reversed.
+                                    for i in range(len(correction.original_text)):
+                                        suffix = correction.original_text[i:]
+                                        prefix = correction.original_text[:i]
+                                        
+                                        if suffix.strip() and new_text.lstrip().startswith(suffix.strip()):
+                                            if prev_seg.text.rstrip().endswith(prefix.strip()):
+                                                # Found it!
+                                                match_len = len(prefix.strip())
+                                                stripped_prev = prev_seg.text.rstrip()
+                                                prev_prefix = stripped_prev[:-match_len]
+                                                
+                                                prev_seg.text = prev_prefix + correction.corrected_text
+                                                
+                                                # Remove from Current
+                                                suffix_len = len(suffix.strip())
+                                                stripped_curr = new_text.lstrip()
+                                                new_text = stripped_curr[suffix_len:].strip()
+                                                
+                                                # Add to applied corrections
+                                                correction.reason += " (Backward Split Fix)"
+                                                applied_corrections.append(correction)
+                                                
+                                                logger.info(f"Applied BACKWARD SPLIT fix: '{correction.original_text}' -> '{correction.corrected_text}' (Merged to Seg {s.idx-1})")
+                                                break
+                                    else:
+                                        logger.warning(f"Rejected {correction.type} fix: '{correction.original_text}' (Backward split detection failed)")
                                 else:
-                                     logger.warning(f"Rejected {correction.type} fix: '{correction.original_text}' not found in segment {s.idx}")
+                                    logger.warning(f"Rejected {correction.type} fix: '{correction.original_text}' not found in segment {s.idx}")
                             else:
                                 logger.warning(f"Rejected {correction.type} fix: '{correction.original_text}' not found in segment {s.idx}")
                                 logger.info(f"No adjacent segment found for fallback check.")
@@ -403,11 +388,11 @@ Example Output:
                     text=new_text
                 ))
             
-            return corrected_segments
+            return corrected_segments, applied_corrections
 
         except Exception as e:
             logger.error(f"Chunk Correction Failed: {e}")
-            return segments # Fallback to original
+            return segments, [] # Fallback to original
 
     async def process_full_document(self, content: str, format: SubtitleFormat = SubtitleFormat.SRT) -> CorrectionResult:
         """
@@ -424,13 +409,16 @@ Example Output:
         # 3. Chunk and Correct (The "Editor")
         CHUNK_SIZE = 30
         corrected_segments = []
+        all_applied_corrections = []
         
         for i in range(0, len(doc.segments), CHUNK_SIZE):
             chunk = doc.segments[i : i + CHUNK_SIZE]
-            corrected_chunk = await self.correct_chunk(chunk, manifest)
+            corrected_chunk, chunk_corrections = await self.correct_chunk(chunk, manifest)
             corrected_segments.extend(corrected_chunk)
+            all_applied_corrections.extend(chunk_corrections)
             
         # 4. Global Consistency Pass (The "Polisher")
+        # TODO: Update global consistency to also return corrections
         corrected_segments = self._apply_global_consistency(corrected_segments, manifest)
 
         # Calculate Diffs for UI
@@ -448,14 +436,15 @@ Example Output:
         # 5. Reconstruct
         output = []
         for s in corrected_segments:
-            start = self._format_time(s.start_ms)
-            end = self._format_time(s.end_ms)
-            output.append(f"{s.idx}\n{start} --> {end}\n{s.text}\n")
+            output.append(f"{s.idx}\n{s.start_ms} --> {s.end_ms}\n{s.text}\n")
             
+        final_content = "\n".join(output)
+        
         return CorrectionResult(
-            content="\n".join(output),
+            content=final_content,
             manifest=manifest,
-            changes=changes
+            changes=changes,
+            applied_corrections=all_applied_corrections
         )
 
     def _apply_global_consistency(self, segments: List[Segment], manifest: ContextManifest) -> List[Segment]:

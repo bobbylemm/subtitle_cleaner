@@ -47,7 +47,8 @@ async def universal_correct(
             "filename": file.filename,
             "context": result.manifest.dict(),
             "corrected_content": result.content,
-            "changes": result.changes[:50] # Limit to top 50 changes
+            "changes": result.changes[:50], # Limit to top 50 changes
+            "applied_corrections": [c.dict() for c in result.applied_corrections]
         }
 
     except Exception as e:

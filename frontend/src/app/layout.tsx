@@ -9,8 +9,24 @@ import allSections from '@/generated/sections.json'
 
 export const metadata: Metadata = {
   title: {
-    template: '%s - Protocol API Reference',
-    default: 'Protocol API Reference',
+    template: '%s - Clean Subtitle',
+    default: 'Clean Subtitle - AI-Powered Subtitle Correction',
+  },
+  description: 'Automatically correct and format your subtitles with AI. Fix grammar, entities, and sync issues while preserving slang and context. Supports .srt and .vtt.',
+  keywords: ['subtitle corrector', 'AI subtitle editor', 'fix subtitles', 'SRT cleaner', 'VTT editor', 'subtitle grammar check'],
+  authors: [{ name: 'Clean Subtitle Team' }],
+  openGraph: {
+    title: 'Clean Subtitle - AI-Powered Subtitle Correction',
+    description: 'Automatically correct and format your subtitles with AI. Fix grammar, entities, and sync issues.',
+    url: 'https://cleansubtitle.com',
+    siteName: 'Clean Subtitle',
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Clean Subtitle - AI-Powered Subtitle Correction',
+    description: 'Automatically correct and format your subtitles with AI.',
   },
 }
 

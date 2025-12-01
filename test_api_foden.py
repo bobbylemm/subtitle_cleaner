@@ -23,7 +23,7 @@ def test_api():
             "country": "UK"
         }
         try:
-            response = requests.post(url, files=files, data=data)
+            response = requests.post(url, files=files, data=data, timeout=120)
             duration = time.time() - start_time
             print(f"Status Code: {response.status_code}")
             print(f"Duration: {duration:.2f} seconds")
@@ -32,6 +32,20 @@ def test_api():
                 print("Error Response:", response.text)
             else:
                 print("Success! Response received.")
+                data = response.json()
+                corrections = data.get("applied_corrections", [])
+                print(f"Applied Corrections Count: {len(corrections)}")
+                if corrections:
+                    print("First 3 corrections:")
+                    for c in corrections[:3]:
+                        print(c)
+                
+                changes = data.get("changes", [])
+                print(f"Changes Count: {len(changes)}")
+                if changes:
+                    print("First 3 changes:")
+                    for c in changes[:3]:
+                        print(c)
         except Exception as e:
             print(f"Request failed: {e}")
 

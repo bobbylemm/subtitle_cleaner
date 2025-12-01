@@ -46,6 +46,16 @@ function ArrowDownTrayIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
 
 import { diffWords } from 'diff'
 
+import { CorrectionTooltip } from '@/components/CorrectionTooltip'
+
+interface Correction {
+  segment_id: number
+  original_text: string
+  corrected_text: string
+  type: string
+  reason: string
+}
+
 export default function CorrectorPage() {
   const [file, setFile] = useState<File | null>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -149,9 +159,42 @@ export default function CorrectorPage() {
     URL.revokeObjectURL(url)
   }
 
+  const resetState = () => {
+    setFile(null)
+    setResult(null)
+    setError(null)
+    setOriginalContent('')
+    setTopic('')
+    setIndustry('')
+    setCountry('')
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const getStats = () => {
+    if (!result?.applied_corrections) return { entity: 0, grammar: 0, other: 0 }
+    
+    const stats = {
+      entity: 0,
+      grammar: 0,
+      other: 0
+    }
+
+    result.applied_corrections.forEach((c: Correction) => {
+      const type = c.type.toLowerCase()
+      if (type === 'entity') stats.entity++
+      else if (type === 'grammar') stats.grammar++
+      else stats.other++
+    })
+
+    return stats
+  }
+
   // Diff Logic
   const renderDiff = (original: string, corrected: string, mode: 'original' | 'corrected') => {
     const diff = diffWords(original, corrected)
+    const corrections = (result?.applied_corrections || []) as Correction[]
 
     return diff.map((part, index) => {
       if (mode === 'original') {
@@ -169,8 +212,27 @@ export default function CorrectorPage() {
       } else {
         // Corrected Mode
         if (part.added) {
+          // Try to find a matching correction
+          const match = corrections.find(c => 
+            c.corrected_text.includes(part.value.trim()) && part.value.trim().length > 2
+          )
+
+          const content = (
+            <span key={index} className="bg-green-100 text-green-700 font-medium cursor-help border-b-2 border-green-200 border-dotted">
+              {part.value}
+            </span>
+          )
+
+          if (match) {
+            return (
+              <CorrectionTooltip key={index} reason={match.reason} type={match.type}>
+                {content}
+              </CorrectionTooltip>
+            )
+          }
+
           return (
-            <span key={index} className="bg-green-100 text-green-700 font-medium">
+             <span key={index} className="bg-green-100 text-green-700 font-medium">
               {part.value}
             </span>
           )
@@ -195,127 +257,184 @@ export default function CorrectorPage() {
           </p>
         </div>
 
-        {/* Main Card */}
+        {/* Main Card / Summary Card */}
         <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden mb-8">
           <div className="p-8">
-            {/* Dropzone */}
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={clsx(
-                'relative flex flex-col items-center justify-center w-full h-64 rounded-xl border-2 border-dashed transition-all cursor-pointer',
-                isDragging
-                  ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10'
-                  : 'border-zinc-300 dark:border-zinc-700 hover:border-emerald-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
-              )}
-            >
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileSelect}
-                className="hidden"
-                accept=".srt,.vtt"
-              />
-              
-              {file ? (
-                <div className="text-center">
-                  <CheckCircleIcon className="mx-auto h-12 w-12 text-emerald-500" />
-                  <p className="mt-4 text-lg font-medium text-zinc-900 dark:text-zinc-100">
-                    {file.name}
-                  </p>
-                  <p className="text-sm text-zinc-500">
-                    {(file.size / 1024).toFixed(1)} KB
-                  </p>
-                  <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400">
-                    Click to change file
-                  </p>
-                </div>
-              ) : (
-                <div className="text-center">
-                  <CloudArrowUpIcon className="mx-auto h-12 w-12 text-zinc-400" />
-                  <p className="mt-4 text-lg font-medium text-zinc-900 dark:text-zinc-100">
-                    Drop your subtitle file here
-                  </p>
-                  <p className="text-sm text-zinc-500">
-                    or click to browse (.srt, .vtt)
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Advanced Options Toggle */}
-            <div className="mt-6">
-              <button
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-emerald-500 transition-colors"
-              >
-                <span className="mr-2">{showAdvanced ? '−' : '+'}</span>
-                Advanced Options
-              </button>
-
-              <AnimatePresence>
-                {showAdvanced && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 pt-4">
-                      <div>
-                        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                          Topic
-                        </label>
-                        <input
-                          type="text"
-                          value={topic}
-                          onChange={(e) => setTopic(e.target.value)}
-                          placeholder="e.g. Football"
-                          className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                          Industry
-                        </label>
-                        <input
-                          type="text"
-                          value={industry}
-                          onChange={(e) => setIndustry(e.target.value)}
-                          placeholder="e.g. Sports"
-                          className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                          Country
-                        </label>
-                        <input
-                          type="text"
-                          value={country}
-                          onChange={(e) => setCountry(e.target.value)}
-                          placeholder="e.g. UK"
-                          className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                        />
-                      </div>
+            {!result ? (
+              <>
+                {/* Dropzone */}
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={clsx(
+                    'relative flex flex-col items-center justify-center w-full h-64 rounded-xl border-2 border-dashed transition-all cursor-pointer',
+                    isDragging
+                      ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10'
+                      : 'border-zinc-300 dark:border-zinc-700 hover:border-emerald-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
+                  )}
+                >
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    accept=".srt,.vtt"
+                  />
+                  
+                  {file ? (
+                    <div className="text-center">
+                      <CheckCircleIcon className="mx-auto h-12 w-12 text-emerald-500" />
+                      <p className="mt-4 text-lg font-medium text-zinc-900 dark:text-zinc-100">
+                        {file.name}
+                      </p>
+                      <p className="text-sm text-zinc-500">
+                        {(file.size / 1024).toFixed(1)} KB
+                      </p>
+                      <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400">
+                        Click to change file
+                      </p>
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                  ) : (
+                    <div className="text-center">
+                      <CloudArrowUpIcon className="mx-auto h-12 w-12 text-zinc-400" />
+                      <p className="mt-4 text-lg font-medium text-zinc-900 dark:text-zinc-100">
+                        Drop your subtitle file here
+                      </p>
+                      <p className="text-sm text-zinc-500">
+                        or click to browse (.srt, .vtt)
+                      </p>
+                    </div>
+                  )}
+                </div>
 
-            {/* Action Button */}
-            <div className="mt-8">
-              <Button
-                onClick={handleSubmit}
-                disabled={!file || isProcessing}
-                className="w-full justify-center py-4 text-lg"
-              >
-                {isProcessing ? 'Processing...' : 'Correct Subtitles'}
-              </Button>
-            </div>
+                {/* Advanced Options Toggle */}
+                <div className="mt-6">
+                  <button
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    className="flex items-center text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-emerald-500 transition-colors"
+                  >
+                    <span className="mr-2">{showAdvanced ? '−' : '+'}</span>
+                    Advanced Options
+                  </button>
+
+                  <AnimatePresence>
+                    {showAdvanced && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 pt-4">
+                          <div>
+                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                              Topic
+                            </label>
+                            <input
+                              type="text"
+                              value={topic}
+                              onChange={(e) => setTopic(e.target.value)}
+                              placeholder="e.g. Football"
+                              className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                              Industry
+                            </label>
+                            <input
+                              type="text"
+                              value={industry}
+                              onChange={(e) => setIndustry(e.target.value)}
+                              placeholder="e.g. Sports"
+                              className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                              Country
+                            </label>
+                            <input
+                              type="text"
+                              value={country}
+                              onChange={(e) => setCountry(e.target.value)}
+                              placeholder="e.g. UK"
+                              className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Action Button */}
+                <div className="mt-8">
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={!file || isProcessing}
+                    className="w-full justify-center py-4 text-lg"
+                  >
+                    {isProcessing ? 'Processing...' : 'Correct Subtitles'}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              // Summary Card
+              <div className="space-y-8">
+                <div className="border-b border-zinc-100 dark:border-zinc-800 pb-6">
+                  <div className="mb-4">
+                    <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Processing Complete</h3>
+                    <p className="text-sm text-zinc-500 mt-1">
+                      {file?.name} • {(file?.size ? file.size / 1024 : 0).toFixed(1)} KB
+                    </p>
+                  </div>
+                  <Button onClick={resetState} variant="outline" className="w-full sm:w-auto text-sm whitespace-nowrap px-8">
+                    Process Another File
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-blue-50 dark:bg-blue-900/10 rounded-xl p-4 border border-blue-100 dark:border-blue-800">
+                    <div className="text-blue-600 dark:text-blue-400 text-sm font-medium mb-1">Entities Fixed</div>
+                    <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">{getStats().entity}</div>
+                  </div>
+                  <div className="bg-yellow-50 dark:bg-yellow-900/10 rounded-xl p-4 border border-yellow-100 dark:border-yellow-800">
+                    <div className="text-yellow-600 dark:text-yellow-400 text-sm font-medium mb-1">Grammar Issues</div>
+                    <div className="text-3xl font-bold text-yellow-700 dark:text-yellow-300">{getStats().grammar}</div>
+                  </div>
+                  <div className="bg-purple-50 dark:bg-purple-900/10 rounded-xl p-4 border border-purple-100 dark:border-purple-800">
+                    <div className="text-purple-600 dark:text-purple-400 text-sm font-medium mb-1">Other / Context</div>
+                    <div className="text-3xl font-bold text-purple-700 dark:text-purple-300">{getStats().other}</div>
+                  </div>
+                </div>
+
+                {(topic || industry || country) && (
+                  <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-4 border border-zinc-100 dark:border-zinc-800">
+                    <h4 className="text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-3">Settings Applied</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {topic && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-300">
+                          Topic: {topic}
+                        </span>
+                      )}
+                      {industry && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-300">
+                          Industry: {industry}
+                        </span>
+                      )}
+                      {country && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-300">
+                          Country: {country}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {error && (
               <div className="mt-4 p-4 rounded-md bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
@@ -331,28 +450,23 @@ export default function CorrectorPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-8"
+          className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8"
         >
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 p-8">
+          {/* Diff View (Takes up 2 cols) */}
+          <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 p-8 h-[800px] flex flex-col">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
                 Correction Complete! ✨
               </h2>
               <div className="flex gap-4">
-                <div className="text-sm text-zinc-500 flex items-center">
-                  <span className="inline-block w-3 h-3 bg-green-100 border border-green-300 rounded mr-2"></span>
-                  <span>Added</span>
-                  <span className="inline-block w-3 h-3 bg-red-100 border border-red-300 rounded ml-4 mr-2"></span>
-                  <span>Removed</span>
-                </div>
                 <Button onClick={downloadFile} variant="outline">
                   <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
-                  Download Corrected File
+                  Download
                 </Button>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6 h-[600px]">
+            <div className="grid grid-cols-2 gap-6 flex-1 min-h-0">
               {/* Original Column */}
               <div className="flex flex-col h-full min-h-0 overflow-hidden">
                 <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-3 flex-none">
@@ -373,6 +487,47 @@ export default function CorrectorPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Review Panel (Takes up 1 col) */}
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 p-6 h-[800px] flex flex-col">
+             <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-4 flex items-center">
+               <span>Corrections Log</span>
+               <span className="ml-2 text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-600 px-2 py-1 rounded-full">
+                 {result.applied_corrections?.length || 0}
+               </span>
+             </h3>
+             
+             <div className="flex-1 overflow-y-auto pr-2 space-y-3">
+               {(result.applied_corrections || []).map((c: Correction, i: number) => (
+                 <div key={i} className="p-3 rounded-lg border border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/30 hover:bg-zinc-100 transition-colors">
+                   <div className="flex items-center justify-between mb-1">
+                     <span className={clsx(
+                       "text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded",
+                       c.type === 'entity' ? 'bg-blue-100 text-blue-700' :
+                       c.type === 'grammar' ? 'bg-yellow-100 text-yellow-700' :
+                       'bg-gray-100 text-gray-700'
+                     )}>
+                       {c.type}
+                     </span>
+                     <span className="text-xs text-zinc-400">Seg {c.segment_id}</span>
+                   </div>
+                   <div className="flex items-center gap-2 text-sm mb-1">
+                     <span className="text-red-500 line-through decoration-red-500/30">{c.original_text}</span>
+                     <span className="text-zinc-400">→</span>
+                     <span className="text-green-600 font-medium">{c.corrected_text}</span>
+                   </div>
+                   <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                     {c.reason}
+                   </p>
+                 </div>
+               ))}
+               {(!result.applied_corrections || result.applied_corrections.length === 0) && (
+                 <div className="text-center text-zinc-400 py-8">
+                   No corrections applied.
+                 </div>
+               )}
+             </div>
           </div>
         </motion.div>
       )}
