@@ -51,6 +51,8 @@ async def universal_correct(
         }
 
     except Exception as e:
+        import logging
+        logging.error(f"Universal Correction Failed: {e}", exc_info=True)
         if 'tmp_path' in locals() and os.path.exists(tmp_path):
             os.unlink(tmp_path)
         raise HTTPException(status_code=500, detail=str(e))

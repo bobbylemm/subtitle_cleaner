@@ -39,6 +39,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     yield
     
     # Shutdown
+    
+    
+# Configure logging
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 
 
 app = FastAPI(
@@ -119,6 +127,8 @@ async def not_found(request: Request, exc):
 @app.exception_handler(500)
 async def server_error(request: Request, exc):
     request_id = getattr(request.state, "request_id", "unknown")
+    import logging
+    logging.error(f"Unhandled exception (Request ID: {request_id}): {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
         content={

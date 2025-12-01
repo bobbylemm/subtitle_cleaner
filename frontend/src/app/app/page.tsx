@@ -114,7 +114,9 @@ export default function CorrectorPage() {
     if (country) formData.append('country', country)
 
     try {
-      const response = await fetch('/api/v1/universal/universal-correct', {
+      // Bypass Next.js proxy to avoid timeouts on large files
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/v1/universal/universal-correct`, {
         method: 'POST',
         body: formData,
       })
