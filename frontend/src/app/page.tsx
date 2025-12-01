@@ -9,6 +9,8 @@ import { Pricing } from '@/components/landing/Pricing'
 import { PrimaryFeatures } from '@/components/landing/PrimaryFeatures'
 import { SecondaryFeatures } from '@/components/landing/SecondaryFeatures'
 import { Testimonials } from '@/components/landing/Testimonials'
+import { HowItWorks } from '@/components/landing/HowItWorks'
+import { Benefits } from '@/components/landing/Benefits'
 
 export default function Home() {
   return (
@@ -16,7 +18,9 @@ export default function Home() {
       <Header />
       <main>
         <Hero />
+        <HowItWorks />
         <PrimaryFeatures />
+        <Benefits />
         <SecondaryFeatures />
         <CallToAction />
         <Testimonials />

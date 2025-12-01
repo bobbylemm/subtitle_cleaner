@@ -29,7 +29,7 @@ export function Hero() {
         for everyone.
       </h1>
       <p className="mx-auto mt-6 max-w-2xl text-lg tracking-tight text-zinc-600 dark:text-neutral-400">
-        AI-powered correction that preserves slang, style, and context. Stop wasting hours manually fixing subtitles.
+        AI-powered correction that preserves slang, style, and context. Stop wasting hours manually fixing subtitles. Our intelligent SRT cleaner ensures your captions are accurate, professional, and ready for global audiences on YouTube, Netflix, and social media.
       </p>
       <div className="mt-10 flex justify-center gap-x-6">
         <Button href="/app" color="green">Try Demo for Free</Button>

@@ -209,7 +209,7 @@ export function PrimaryFeatures() {
             Everything you need for perfect subtitles.
           </h2>
           <p className="mt-6 text-lg tracking-tight text-neutral-400">
-            Stop spending hours manually correcting subtitles. Our AI engine handles the tedious work for you.
+            Stop spending hours manually correcting subtitles. Our AI engine handles the tedious work for you, ensuring your captions are perfect for every platform. Whether you're fixing YouTube auto-captions or polishing a feature film, we've got you covered.
           </p>
         </div>
         <TabGroup
