@@ -11,6 +11,8 @@ import { SecondaryFeatures } from '@/components/landing/SecondaryFeatures'
 import { Testimonials } from '@/components/landing/Testimonials'
 import { HowItWorks } from '@/components/landing/HowItWorks'
 import { Benefits } from '@/components/landing/Benefits'
+import { UseCases } from '@/components/landing/UseCases'
+import { TechnicalDetails } from '@/components/landing/TechnicalDetails'
 
 export default function Home() {
   return (
@@ -20,7 +22,9 @@ export default function Home() {
         <Hero />
         <HowItWorks />
         <PrimaryFeatures />
+        <TechnicalDetails />
         <Benefits />
+        <UseCases />
         <SecondaryFeatures />
         <CallToAction />
         <Testimonials />

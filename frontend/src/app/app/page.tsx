@@ -531,6 +531,38 @@ export default function CorrectorPage() {
           </div>
         </motion.div>
       )}
+      {/* Pro Tips Section */}
+      <div className="mt-16 border-t border-zinc-200 dark:border-zinc-800 pt-16">
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-8 text-center">
+          Pro Tips for Perfect Subtitles
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div>
+            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
+              Context Matters
+            </h3>
+            <p className="text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed">
+              Providing a <strong>Topic</strong> (e.g., "Medical", "Football") helps our AI understand jargon. Setting the <strong>Industry</strong> refines the tone, ensuring your subtitles sound professional.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
+              Regional Accuracy
+            </h3>
+            <p className="text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed">
+              Use the <strong>Country</strong> setting to handle dialect-specific spelling (e.g., "Color" vs "Colour"). This ensures your subtitles feel native to your target audience.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
+              Review with Confidence
+            </h3>
+            <p className="text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed">
+              Our <strong>Diff View</strong> highlights every change. Green indicates corrections, while red shows removals. Hover over any green text to see exactly <em>why</em> the change was made.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

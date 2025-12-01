@@ -1,16 +1,4 @@
 {
-  "/errors": [
-    {
-      "id": "status-codes",
-      "title": "Status Codes",
-      "offsetRem": 0
-    },
-    {
-      "id": "error-response-format",
-      "title": "Error Response Format",
-      "offsetRem": 0
-    }
-  ],
   "/authentication": [
     {
       "id": "using-your-api-key",
@@ -35,6 +23,18 @@
       "offsetRem": 0
     }
   ],
+  "/errors": [
+    {
+      "id": "status-codes",
+      "title": "Status Codes",
+      "offsetRem": 0
+    },
+    {
+      "id": "error-response-format",
+      "title": "Error Response Format",
+      "offsetRem": 0
+    }
+  ],
   "/health": [
     {
       "id": "get-status",
@@ -47,10 +47,10 @@
       "offsetRem": 0
     }
   ],
-  "/universal": [
+  "/validate": [
     {
-      "id": "the-correction-model",
-      "title": "The Correction Model",
+      "id": "check-subtitles",
+      "title": "Check Subtitles",
       "offsetRem": 0
     },
     {
@@ -59,10 +59,10 @@
       "offsetRem": 0
     }
   ],
-  "/validate": [
+  "/universal": [
     {
-      "id": "check-subtitles",
-      "title": "Check Subtitles",
+      "id": "the-correction-model",
+      "title": "The Correction Model",
       "offsetRem": 0
     },
     {

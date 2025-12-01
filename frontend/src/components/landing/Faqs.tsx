@@ -8,51 +8,64 @@ const faqs = [
     {
       question: 'Does Clean Subtitle work with VTT files?',
       answer:
-        'Yes, we support both SRT and VTT formats. The output will maintain the original format.',
+        'Yes, we fully support both SubRip (.srt) and WebVTT (.vtt) formats. Whether you are exporting from Adobe Premiere Pro, DaVinci Resolve, or Final Cut Pro, our system preserves your original timestamps and formatting while correcting the text. You can seamlessly switch between formats if needed.',
     },
     {
       question: 'Is my data secure?',
-      answer: 'Absolutely. We process your files in a secure environment and delete them immediately after processing. We do not use your data to train our models.',
+      answer: 'Absolutely. Security is our top priority. We process your subtitle files in an isolated, encrypted environment. Once the correction process is complete and you have downloaded your file, the data is permanently deleted from our servers. We do not use your content to train our public AI models.',
     },
     {
       question: 'How accurate is the correction?',
       answer:
-        'Our system uses advanced LLMs with a specialized context-aware engine. It is significantly more accurate than standard spell checkers or basic AI prompts.',
+        'Our system uses advanced Large Language Models (LLMs) combined with a specialized context-aware engine. Unlike basic spell checkers that only look at individual words, Clean Subtitle analyzes the entire sentence and surrounding context. This allows it to fix complex issues like homophones (e.g., "their" vs "there"), proper nouns (e.g., "Mbappé"), and technical jargon with over 98% accuracy.',
+    },
+    {
+      question: 'Can it fix synchronization issues?',
+      answer:
+        'While our primary focus is on text correction (grammar, spelling, punctuation), we also perform basic structural validation. If your file has overlapping timestamps or invalid formatting that might cause playback errors on YouTube or VLC, our system will identify and often auto-correct these structural problems.',
     },
   ],
   [
     {
       question: 'Can I customize the style guide?',
       answer:
-        'Yes, you can provide specific instructions or a style guide to ensure the corrections match your brand voice.',
+        'Yes! We understand that every creator has a unique voice. You can provide specific instructions, such as "Use US English spelling," "Always capitalize specific terms," or "Keep slang words like \'gonna\'." Our AI adapts to your preferences, ensuring the final subtitles match your brand identity perfectly.',
     },
     {
-      question:
-        'What languages are supported?',
+      question: 'What languages are supported?',
       answer:
-        'Currently, we focus on English (US/UK), but our engine is capable of handling multiple languages. Contact us for specific language requests.',
+        'Currently, we specialize in English (US, UK, Australian, etc.), including various dialects and accents. Our engine is particularly good at handling non-native English speakers and heavy accents by using phonetic context. We are actively working on adding support for Spanish, French, and German in the near future.',
     },
     {
-      question:
-        'Do you offer an API?',
+      question: 'Do you offer an API for developers?',
       answer:
-        'Yes, we have a robust API for enterprise integration. Please contact our sales team for documentation and access.',
+        'Yes, we offer a robust REST API for enterprise integration. If you are a media company, streaming platform, or post-production house looking to automate subtitle correction at scale, our API provides all the features of the web tool programmatically. Contact our sales team for documentation and API keys.',
+    },
+    {
+      question: 'How does it handle slang and informal speech?',
+      answer:
+        'One of the biggest challenges with standard auto-correct is that it often "fixes" intentional slang, ruining the vibe of the content. Clean Subtitle is designed to recognize and preserve intentional slang, idioms, and informal speech patterns, ensuring your subtitles feel authentic to the speaker\'s voice.',
     },
   ],
   [
     {
       question: 'How does the pricing work?',
       answer:
-        'We offer a free tier for individuals and paid plans for professionals and teams. Check our pricing section for details.',
+        'We offer a generous free tier that allows you to process a limited number of files per day, perfect for individual creators. For professionals and teams requiring higher volume, faster processing speeds, and priority support, we offer affordable monthly and annual subscription plans. Check our pricing section for full details.',
     },
     {
       question: 'Can I cancel my subscription?',
-      answer: 'Yes, you can cancel at any time. No questions asked.',
+      answer: 'Yes, you can cancel your subscription at any time directly from your dashboard. There are no long-term contracts or hidden fees. If you cancel, you will retain access to your paid features until the end of your current billing cycle.',
     },
     {
       question: 'Do you offer refunds?',
       answer:
-        'If you are not satisfied with the results, please contact support within 14 days for a full refund.',
+        'We stand by the quality of our service. If you are not completely satisfied with the results, please contact our support team within 14 days of your purchase. We will work with you to resolve the issue or provide a full refund, no questions asked.',
+    },
+    {
+      question: 'What if I have a very large file?',
+      answer:
+        'Our system is optimized to handle feature-length movies and long-form podcasts. We support files up to 50MB in size, which covers almost any subtitle file you will encounter. For extremely large batch processing needs, please reach out to our enterprise team.',
     },
   ],
 ]
