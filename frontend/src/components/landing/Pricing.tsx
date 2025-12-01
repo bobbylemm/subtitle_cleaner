@@ -128,51 +128,51 @@ export function Pricing() {
             for everyone.
           </h2>
           <p className="mt-4 text-lg text-neutral-400">
-            It doesn’t matter what size your business is, our software won’t
-            work well for you.
+            Start for free, upgrade for power. No hidden fees.
           </p>
         </div>
         <div className="-mx-4 mt-16 grid max-w-2xl grid-cols-1 gap-y-10 sm:mx-auto lg:-mx-8 lg:max-w-none lg:grid-cols-3 xl:mx-0 xl:gap-x-8">
           <Plan
-            name="Starter"
-            price="$9"
-            description="Good for anyone who is self-employed and just getting started."
+            name="Free"
+            price="$0"
+            description="Perfect for casual creators and one-off corrections."
             href="/app"
             features={[
-              'Send 10 quotes and invoices',
-              'Connect up to 2 bank accounts',
-              'Track up to 15 expenses per month',
-              'Manual payroll support',
-              'Export up to 3 reports',
+              '3 files per day',
+              'Max file size: 50MB',
+              'Standard processing speed',
+              'Basic grammar & spelling checks',
+              'SRT & VTT support',
             ]}
           />
           <Plan
             featured
-            name="Small business"
-            price="$15"
-            description="Perfect for small / medium sized businesses."
-            href="/register"
+            name="Pro"
+            price="$29"
+            description="For professional editors and content agencies."
+            href="/app"
             features={[
-              'Send 25 quotes and invoices',
-              'Connect up to 5 bank accounts',
-              'Track up to 50 expenses per month',
-              'Automated payroll support',
-              'Export up to 12 reports',
-              'Bulk reconcile transactions',
-              'Track in multiple currencies',
+              'Unlimited files',
+              'Priority processing (4x faster)',
+              'Advanced Context-Aware AI',
+              'Custom Style Guides',
+              'Dialect & Slang preservation',
+              'Bulk upload support',
+              'Email support',
             ]}
           />
           <Plan
-            name="Enterprise"
-            price="$39"
-            description="For even the biggest enterprise companies."
-            href="/register"
+            name="API"
+            price="Custom"
+            description="For platforms and high-volume automation."
+            href="mailto:sales@cleansubtitle.com"
             features={[
-              'Send unlimited quotes and invoices',
-              'Connect up to 15 bank accounts',
-              'Track up to 200 expenses per month',
-              'Automated payroll support',
-              'Export up to 25 reports, including TPS',
+              'Full API Access',
+              '99.9% Uptime SLA',
+              'Dedicated account manager',
+              'Custom model fine-tuning',
+              'On-premise deployment options',
+              'Volume discounts',
             ]}
           />
         </div>

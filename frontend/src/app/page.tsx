@@ -21,7 +21,6 @@ export default function Home() {
       <main>
         <Hero />
         <HowItWorks />
-        <PrimaryFeatures />
         <TechnicalDetails />
         <Benefits />
         <UseCases />

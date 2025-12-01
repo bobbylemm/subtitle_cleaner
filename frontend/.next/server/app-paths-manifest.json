@@ -1,10 +1,5 @@
 {
-  "/docs/page": "app/docs/page.js",
-  "/health/page": "app/health/page.js",
-  "/validate/page": "app/validate/page.js",
-  "/universal/page": "app/universal/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
   "/page": "app/page.js",
-  "/authentication/page": "app/authentication/page.js",
-  "/errors/page": "app/errors/page.js",
   "/app/page": "app/app/page.js"
 }

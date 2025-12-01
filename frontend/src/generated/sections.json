@@ -1,28 +1,4 @@
 {
-  "/authentication": [
-    {
-      "id": "using-your-api-key",
-      "title": "Using your API Key",
-      "offsetRem": 0
-    },
-    {
-      "id": "errors",
-      "title": "Errors",
-      "offsetRem": 0
-    }
-  ],
-  "/docs": [
-    {
-      "id": "features",
-      "title": "Features",
-      "offsetRem": 0
-    },
-    {
-      "id": "next-steps",
-      "title": "Next Steps",
-      "offsetRem": 0
-    }
-  ],
   "/errors": [
     {
       "id": "status-codes",
@@ -47,10 +23,34 @@
       "offsetRem": 0
     }
   ],
-  "/validate": [
+  "/authentication": [
     {
-      "id": "check-subtitles",
-      "title": "Check Subtitles",
+      "id": "using-your-api-key",
+      "title": "Using your API Key",
+      "offsetRem": 0
+    },
+    {
+      "id": "errors",
+      "title": "Errors",
+      "offsetRem": 0
+    }
+  ],
+  "/docs": [
+    {
+      "id": "features",
+      "title": "Features",
+      "offsetRem": 0
+    },
+    {
+      "id": "next-steps",
+      "title": "Next Steps",
+      "offsetRem": 0
+    }
+  ],
+  "/universal": [
+    {
+      "id": "the-correction-model",
+      "title": "The Correction Model",
       "offsetRem": 0
     },
     {
@@ -59,10 +59,10 @@
       "offsetRem": 0
     }
   ],
-  "/universal": [
+  "/validate": [
     {
-      "id": "the-correction-model",
-      "title": "The Correction Model",
+      "id": "check-subtitles",
+      "title": "Check Subtitles",
       "offsetRem": 0
     },
     {
