@@ -46,7 +46,7 @@ export const Header = forwardRef<
   let bgOpacityDark = useTransform(scrollY, [0, 72], ['20%', '80%'])
 
   let pathname = usePathname()
-  let isAppPage = pathname === '/app'
+  let isAppPage = pathname === '/tool'
 
   return (
     <motion.div
@@ -105,7 +105,7 @@ export const Header = forwardRef<
           <ThemeToggle />
         </div>
         <div className="hidden min-[416px]:contents">
-          <Button href="/app">Sign in</Button>
+          <Button href="/tool">Sign in</Button>
         </div>
       </div>
     </motion.div>

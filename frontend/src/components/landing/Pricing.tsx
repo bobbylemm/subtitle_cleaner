@@ -136,7 +136,7 @@ export function Pricing() {
             name="Free"
             price="$0"
             description="Perfect for casual creators and one-off corrections."
-            href="/app"
+            href="/tool"
             features={[
               '3 files per day',
               'Max file size: 50MB',
@@ -150,7 +150,7 @@ export function Pricing() {
             name="Pro"
             price="$29"
             description="For professional editors and content agencies."
-            href="/app"
+            href="/tool"
             features={[
               'Unlimited files',
               'Priority processing (4x faster)',

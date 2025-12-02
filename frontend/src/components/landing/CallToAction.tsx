@@ -19,7 +19,7 @@ export function CallToAction() {
             It’s time to take control of your subtitles. Try our software so you can
             feel like you’re doing something productive.
           </p>
-          <Button href="/app" color="white" className="mt-10">
+          <Button href="/tool" color="white" className="mt-10">
             Try Demo for Free
           </Button>
         </div>

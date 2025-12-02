@@ -21,7 +21,7 @@ export function Layout({
 }) {
   let pathname = usePathname()
   let isLandingPage = pathname === '/'
-  let isAppPage = pathname === '/app'
+  let isAppPage = pathname === '/tool'
 
   if (isLandingPage) {
     return <>{children}</>
@@ -29,9 +29,8 @@ export function Layout({
 
   return (
     <SectionProvider sections={allSections[pathname] ?? []}>
-      <div className={clsx('h-full', !isAppPage && 'lg:ml-72 xl:ml-80')}>
+      <div key={pathname} className={clsx('h-full', !isAppPage && 'lg:ml-72 xl:ml-80')}>
         <motion.header
-          layoutScroll
           className="contents lg:pointer-events-none lg:fixed lg:inset-0 lg:z-40 lg:flex"
         >
           <div

@@ -32,7 +32,7 @@ export function Hero() {
         AI-powered correction that preserves slang, style, and context. Stop wasting hours manually fixing subtitles. Our intelligent SRT cleaner ensures your captions are accurate, professional, and ready for global audiences on YouTube, Netflix, and social media.
       </p>
       <div className="mt-10 flex justify-center gap-x-6">
-        <Button href="/app" color="green">Try Demo for Free</Button>
+        <Button href="/tool" color="green">Try Demo for Free</Button>
         <Button
           href="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
           variant="outline"
